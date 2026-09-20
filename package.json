@@ -1,0 +1,17 @@
+{
+  "name": "backstage-plugin-techdocs-addon-dbml",
+  "version": "0.0.0",
+  "description": "Backstage TechDocs addon rendering interactive DBML diagrams (placeholder)",
+  "license": "GPL-3.0-or-later",
+  "main": "index.js",
+  "files": [
+    "index.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panda-coop/backstage-plugin-techdocs-addon-dbml.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

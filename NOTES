@@ -1,0 +1,8 @@
+it's should be usable via
+
+useShadowRootElements('code.language-dbml')
+
+parcing via @dbml/core
+
+also as an inspiration taken: github.com/mayeenulislam/obsidian-dbml-visualizer
+but our one should be interactive so
