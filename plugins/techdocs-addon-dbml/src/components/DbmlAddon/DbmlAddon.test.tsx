@@ -37,13 +37,39 @@ describe('Dbml addon', () => {
 
     const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]');
     expect(diagram).not.toBeNull();
-    expect(diagram!.textContent).toContain('2 table(s), 1 relationship(s)');
+    expect(diagram!.textContent).toContain('2 tables · 1 relationship');
     expect(diagram!.querySelector('.react-flow')).not.toBeNull();
     expect(diagram!.textContent).toContain('users');
     expect(diagram!.textContent).toContain('posts');
 
     const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
     expect(original!.style.display).toBe('none');
+  });
+
+  it('switches between diagram and code view', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <div className="language-text highlight">
+          <pre>
+            <code>{DBML_FIXTURE}</code>
+          </pre>
+        </div>
+      </body>,
+    );
+
+    const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]')!;
+    const codeButton = [...diagram.querySelectorAll('button')].find(
+      b => b.textContent === 'Code',
+    )!;
+    fireEvent.click(codeButton);
+    expect(diagram.querySelector('[data-testid="dbml-source"]')).not.toBeNull();
+    expect(diagram.querySelector('.react-flow')).toBeNull();
+
+    const diagramButton = [...diagram.querySelectorAll('button')].find(
+      b => b.textContent === 'Diagram',
+    )!;
+    fireEvent.click(diagramButton);
+    expect(diagram.querySelector('.react-flow')).not.toBeNull();
   });
 
   it('opens and closes the expanded diagram dialog', async () => {
@@ -57,10 +83,10 @@ describe('Dbml addon', () => {
       </body>,
     );
 
-    const expand = [
-      ...shadowRoot!.querySelectorAll<HTMLButtonElement>('button'),
-    ].find(button => button.textContent === 'Expand');
-    expect(expand).toBeDefined();
+    const expand = shadowRoot!.querySelector<HTMLButtonElement>(
+      'button[aria-label="Expand diagram"]',
+    );
+    expect(expand).not.toBeNull();
 
     fireEvent.click(expand!);
     const dialog = document.body.querySelector('[data-testid="dbml-dialog"]');
@@ -101,7 +127,7 @@ describe('Dbml addon', () => {
 
     const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]');
     expect(diagram).not.toBeNull();
-    expect(diagram!.textContent).toContain('1 table(s), 0 relationship(s)');
+    expect(diagram!.textContent).toContain('1 table · 0 relationships');
   });
 
   it('claims explicitly marked dbml blocks', async () => {
