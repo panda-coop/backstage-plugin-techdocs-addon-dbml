@@ -21,13 +21,16 @@ const renderDom = async (dom: React.JSX.Element) =>
     .renderWithEffects();
 
 describe('Dbml addon', () => {
-  it('replaces custom-fence dbml blocks with the placeholder diagram', async () => {
-    // Markup produced by the recommended pymdownx.superfences custom fence.
+  it('claims sniffed techdocs text blocks that parse as dbml', async () => {
+    // TechDocs has no dbml lexer: the fence is emitted as a language-text
+    // highlight block with no class on the code element.
     const { shadowRoot } = await renderDom(
       <body>
-        <pre className="dbml">
-          <code>{DBML_FIXTURE}</code>
-        </pre>
+        <div className="language-text highlight">
+          <pre>
+            <code>{DBML_FIXTURE}</code>
+          </pre>
+        </div>
       </body>,
     );
 
@@ -37,29 +40,58 @@ describe('Dbml addon', () => {
     expect(diagram!.textContent).toContain('posts');
     expect(diagram!.textContent).toContain('1 relationship(s)');
 
-    const original = shadowRoot!.querySelector<HTMLElement>('pre.dbml');
+    const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
     expect(original!.style.display).toBe('none');
   });
 
-  it('replaces language-dbml code blocks with the placeholder diagram', async () => {
+  it('strips line numbers from highlighttable blocks', async () => {
     const { shadowRoot } = await renderDom(
       <body>
-        <div className="highlight">
-          <pre>
-            <code className="language-dbml">{DBML_FIXTURE}</code>
-          </pre>
+        <div className="language-text highlight">
+          <table className="highlighttable">
+            <tbody>
+              <tr>
+                <td className="linenos">
+                  <div className="linenodiv">
+                    <pre>1 2 3</pre>
+                  </div>
+                </td>
+                <td className="code">
+                  <div>
+                    <pre>
+                      <code>{'Table users {\n  id integer\n}'}</code>
+                    </pre>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </body>,
+    );
+
+    const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]');
+    expect(diagram).not.toBeNull();
+    expect(diagram!.textContent).toContain('users');
+  });
+
+  it('claims explicitly marked dbml blocks', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <pre className="dbml">
+          <code>{DBML_FIXTURE}</code>
+        </pre>
       </body>,
     );
 
     expect(
       shadowRoot!.querySelector('[data-testid="dbml-diagram"]'),
     ).not.toBeNull();
-    const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
+    const original = shadowRoot!.querySelector<HTMLElement>('pre.dbml');
     expect(original!.style.display).toBe('none');
   });
 
-  it('shows a parse error for invalid dbml', async () => {
+  it('shows a parse error for invalid explicit dbml', async () => {
     const { shadowRoot } = await renderDom(
       <body>
         <div className="highlight">
@@ -75,12 +107,12 @@ describe('Dbml addon', () => {
     ).not.toBeNull();
   });
 
-  it('leaves non-dbml code blocks alone', async () => {
+  it('leaves blocks declaring another language alone', async () => {
     const { shadowRoot } = await renderDom(
       <body>
-        <div className="highlight">
+        <div className="language-sql highlight">
           <pre>
-            <code className="language-sql">SELECT 1;</code>
+            <code>SELECT 1;</code>
           </pre>
         </div>
       </body>,
@@ -89,6 +121,25 @@ describe('Dbml addon', () => {
     expect(
       shadowRoot!.querySelector('[data-testid="dbml-diagram"]'),
     ).toBeNull();
+    const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
+    expect(original!.style.display).not.toBe('none');
+  });
+
+  it('leaves text blocks that do not parse as dbml alone', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <div className="language-text highlight">
+          <pre>
+            <code>{'Table users {\n  broken [primary key\n'}</code>
+          </pre>
+        </div>
+      </body>,
+    );
+
+    expect(
+      shadowRoot!.querySelector('[data-testid="dbml-diagram"]'),
+    ).toBeNull();
+    expect(shadowRoot!.querySelector('[data-testid="dbml-error"]')).toBeNull();
     const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
     expect(original!.style.display).not.toBe('none');
   });

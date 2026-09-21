@@ -48,18 +48,13 @@ Table users {
 ```
 ````
 
-TechDocs' default highlighter renders unknown fence languages as plain
-highlighted text without a usable class, so each mkdocs site must declare a
-custom fence for the addon to find the blocks:
-
-```yaml
-markdown_extensions:
-  - pymdownx.superfences:
-      custom_fences:
-        - name: dbml
-          class: dbml
-          format: !!python/name:pymdownx.superfences.fence_code_format
-```
+TechDocs' highlighter has no DBML lexer and renders the fence as generic
+highlighted text, losing the language. The addon therefore content-sniffs
+undeclared and `text` highlight blocks, claiming only ones that parse as
+DBML — no mkdocs configuration is needed, but a broken DBML block stays a
+plain code block instead of showing a parse error. Blocks explicitly marked
+as DBML (`code.language-dbml` or `pre.dbml`, e.g. from other markdown
+renderers) are always claimed and do show parse errors.
 
 ## License
 
