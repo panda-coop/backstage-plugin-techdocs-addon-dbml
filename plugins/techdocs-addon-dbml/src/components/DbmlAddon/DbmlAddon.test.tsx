@@ -1,3 +1,4 @@
+import { fireEvent } from '@testing-library/react';
 import { TechDocsAddonTester } from '@backstage/plugin-techdocs-addons-test-utils';
 import { Dbml } from '../../plugin';
 
@@ -36,12 +37,40 @@ describe('Dbml addon', () => {
 
     const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]');
     expect(diagram).not.toBeNull();
+    expect(diagram!.textContent).toContain('2 table(s), 1 relationship(s)');
+    expect(diagram!.querySelector('.react-flow')).not.toBeNull();
     expect(diagram!.textContent).toContain('users');
     expect(diagram!.textContent).toContain('posts');
-    expect(diagram!.textContent).toContain('1 relationship(s)');
 
     const original = shadowRoot!.querySelector<HTMLElement>('.highlight');
     expect(original!.style.display).toBe('none');
+  });
+
+  it('opens and closes the expanded diagram dialog', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <div className="language-text highlight">
+          <pre>
+            <code>{DBML_FIXTURE}</code>
+          </pre>
+        </div>
+      </body>,
+    );
+
+    const expand = [
+      ...shadowRoot!.querySelectorAll<HTMLButtonElement>('button'),
+    ].find(button => button.textContent === 'Expand');
+    expect(expand).toBeDefined();
+
+    fireEvent.click(expand!);
+    const dialog = document.body.querySelector('[data-testid="dbml-dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog!.querySelector('.react-flow')).not.toBeNull();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(
+      document.body.querySelector('[data-testid="dbml-dialog"]'),
+    ).toBeNull();
   });
 
   it('strips line numbers from highlighttable blocks', async () => {
@@ -72,7 +101,7 @@ describe('Dbml addon', () => {
 
     const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]');
     expect(diagram).not.toBeNull();
-    expect(diagram!.textContent).toContain('users');
+    expect(diagram!.textContent).toContain('1 table(s), 0 relationship(s)');
   });
 
   it('claims explicitly marked dbml blocks', async () => {

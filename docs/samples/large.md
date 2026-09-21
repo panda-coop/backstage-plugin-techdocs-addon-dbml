@@ -1,17 +1,18 @@
 # Large schema
 
-A wider schema for exercising layout, panning, and relationship
-highlighting once the interactive renderer lands.
+A wider schema exercising layout, panning, relationship arrows, table
+groups, header colors, and table/field notes.
 
 ```dbml
-Table customers {
+Table customers [headerColor: #16a085] {
   id integer [primary key]
   name varchar [not null]
-  email varchar [unique, not null]
+  email varchar [unique, not null, note: 'Primary contact address']
   phone varchar
   billing_address_id integer
   shipping_address_id integer
   created_at timestamp [default: `now()`]
+  Note: 'People and companies buying from us'
 }
 
 Table addresses {
@@ -82,4 +83,15 @@ Ref: orders.customer_id > customers.id
 Ref: order_lines.order_id > orders.id
 Ref: order_lines.product_id > products.id
 Ref: payments.order_id > orders.id
+
+TableGroup catalog [color: #8e44ad, note: 'Product catalog'] {
+  products
+  categories
+}
+
+TableGroup fulfillment [color: #d35400] {
+  orders
+  order_lines
+  payments
+}
 ```
