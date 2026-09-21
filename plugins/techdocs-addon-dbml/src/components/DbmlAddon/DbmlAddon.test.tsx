@@ -58,15 +58,15 @@ describe('Dbml addon', () => {
     );
 
     const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]')!;
-    const codeButton = [...diagram.querySelectorAll('button')].find(
-      b => b.textContent === 'Code',
+    const codeButton = diagram.querySelector<HTMLButtonElement>(
+      'button[aria-label="Code view"]',
     )!;
     fireEvent.click(codeButton);
     expect(diagram.querySelector('[data-testid="dbml-source"]')).not.toBeNull();
     expect(diagram.querySelector('.react-flow')).toBeNull();
 
-    const diagramButton = [...diagram.querySelectorAll('button')].find(
-      b => b.textContent === 'Diagram',
+    const diagramButton = diagram.querySelector<HTMLButtonElement>(
+      'button[aria-label="Diagram view"]',
     )!;
     fireEvent.click(diagramButton);
     expect(diagram.querySelector('.react-flow')).not.toBeNull();

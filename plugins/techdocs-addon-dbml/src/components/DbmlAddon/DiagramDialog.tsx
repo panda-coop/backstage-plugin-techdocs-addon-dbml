@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Database } from '@dbml/core';
 import { DiagramCanvas } from './DiagramCanvas';
+import { useDbmlTheme } from './palette';
 
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
@@ -13,42 +14,10 @@ const overlayStyle: React.CSSProperties = {
   justifyContent: 'center',
 };
 
-const panelStyle: React.CSSProperties = {
-  width: 'min(94vw, 1600px)',
-  height: '88vh',
-  display: 'flex',
-  flexDirection: 'column',
-  background: '#ffffff',
-  color: '#263238',
-  borderRadius: 8,
-  overflow: 'hidden',
-  boxShadow: '0 8px 40px rgba(0, 0, 0, 0.4)',
-};
-
-const titleBarStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '10px 16px',
-  borderBottom: '1px solid #eceff1',
-  fontWeight: 600,
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  border: '1px solid #b0bec5',
-  borderRadius: 4,
-  background: 'transparent',
-  color: 'inherit',
-  padding: '4px 12px',
-  cursor: 'pointer',
-  font: 'inherit',
-};
-
 /**
  * Plain fixed-overlay dialog portaled to document.body — deliberately not a
  * MUI Dialog: the addon mounts inside the TechDocs shadow root where MUI's
- * head-injected styles do not apply, and a hand-rolled overlay keeps the
- * plugin free of a @material-ui peer dependency.
+ * head-injected styles do not apply, so the overlay is styled inline.
  */
 export const DiagramDialog = ({
   title,
@@ -59,6 +28,8 @@ export const DiagramDialog = ({
   database: Database;
   onClose: () => void;
 }) => {
+  const { palette } = useDbmlTheme();
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -80,10 +51,45 @@ export const DiagramDialog = ({
         }
       }}
     >
-      <div style={panelStyle} role="dialog" aria-label={title}>
-        <div style={titleBarStyle}>
+      <div
+        style={{
+          width: 'min(94vw, 1600px)',
+          height: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: palette.frameBg,
+          color: palette.text,
+          borderRadius: 8,
+          overflow: 'hidden',
+          boxShadow: '0 8px 40px rgba(0, 0, 0, 0.4)',
+        }}
+        role="dialog"
+        aria-label={title}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 16px',
+            borderBottom: `1px solid ${palette.divider}`,
+            fontWeight: 600,
+          }}
+        >
           <span>{title}</span>
-          <button type="button" style={closeButtonStyle} onClick={onClose}>
+          <button
+            type="button"
+            style={{
+              border: `1px solid ${palette.buttonBorder}`,
+              borderRadius: 4,
+              background: 'transparent',
+              color: 'inherit',
+              padding: '4px 12px',
+              cursor: 'pointer',
+              font: 'inherit',
+            }}
+            onClick={onClose}
+          >
             Close
           </button>
         </div>
