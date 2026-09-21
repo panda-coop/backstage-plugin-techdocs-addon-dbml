@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: backstage-plugin-techdocs-addon-dbml
+  description: Backstage TechDocs addon rendering interactive DBML diagrams
+  annotations:
+    github.com/project-slug: panda-coop/backstage-plugin-techdocs-addon-dbml
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: library
+  owner: guests
+  lifecycle: experimental
