@@ -3,7 +3,7 @@ name: publish
 
 on:
   push:
-    tags: ["v*"]
+    tags: ['v*']
   release:
     types: [published]
   workflow_dispatch:
@@ -27,5 +27,18 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
 
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Type check
+        run: yarn tsc
+
+      - name: Build package
+        run: yarn workspace backstage-plugin-techdocs-addon-dbml build
+
       - name: Stage publish to npm
         run: npm stage publish --provenance --access public
+        working-directory: plugins/techdocs-addon-dbml
