@@ -1,6 +1,7 @@
 import dagre from '@dagrejs/dagre';
 import type { Database } from '@dbml/core';
 import { MarkerType, type Edge, type Node } from '@xyflow/react';
+import { PALETTES, type DbmlPalette } from './palette';
 
 export type TableField = {
   name: string;
@@ -44,7 +45,10 @@ export const nodeHeight = (fieldCount: number, hasNote: boolean) =>
 const tableId = (schemaName: string | null | undefined, tableName: string) =>
   `${schemaName || 'public'}.${tableName}`;
 
-export function dbmlToFlow(database: Database): {
+export function dbmlToFlow(
+  database: Database,
+  palette: DbmlPalette = PALETTES.light,
+): {
   nodes: DbmlFlowNode[];
   edges: Edge[];
 } {
@@ -105,7 +109,7 @@ export function dbmlToFlow(database: Database): {
         type: MarkerType.ArrowClosed,
         width: 20,
         height: 20,
-        color: '#78909c',
+        color: palette.arrow,
       };
       edges.push({
         id: `${schema.name}-ref-${refIndex}`,
@@ -114,7 +118,7 @@ export function dbmlToFlow(database: Database): {
         target: tableId(to.schemaName, to.tableName),
         targetHandle: `${to.fieldNames?.[0] ?? ''}-target`,
         type: 'smoothstep',
-        style: { stroke: '#90a4ae', strokeWidth: 1.5 },
+        style: { stroke: palette.edge, strokeWidth: 1.5 },
         markerStart: from.relation === '1' ? arrow : undefined,
         markerEnd: to.relation === '1' ? arrow : undefined,
       });

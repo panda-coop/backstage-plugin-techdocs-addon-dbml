@@ -4,6 +4,7 @@ import type { Database } from '@dbml/core';
 import { DiagramCanvas } from './DiagramCanvas';
 import { DiagramDialog } from './DiagramDialog';
 import { highlightDbml } from './highlightDbml';
+import { useDbmlTheme, type DbmlPalette } from './palette';
 
 type ParseResult = { database: Database } | { error: string };
 
@@ -21,43 +22,39 @@ function parseDbml(source: string): ParseResult {
   }
 }
 
-// Explicit background and text colors: the frame lives in the TechDocs
-// shadow DOM and must not inherit the page theme — the canvas and node
-// palette are light, so the chrome is pinned light too.
-const frameStyle: React.CSSProperties = {
-  border: '1px solid #9e9e9e',
-  borderRadius: 4,
-  margin: '1em 0',
-  overflow: 'hidden',
-  background: '#ffffff',
-  color: '#263238',
-};
+const DiagramIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    aria-hidden="true"
+  >
+    <rect x="2" y="3" width="9" height="7" rx="1" />
+    <rect x="13" y="14" width="9" height="7" rx="1" />
+    <path d="M6.5 10v4a3 3 0 0 0 3 3H13" />
+  </svg>
+);
 
-const toolbarStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  padding: '6px 10px',
-  borderBottom: '1px solid #e0e0e0',
-  fontSize: 13,
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: '1px solid #b0bec5',
-  background: 'transparent',
-  color: 'inherit',
-  padding: '2px 10px',
-  cursor: 'pointer',
-  font: 'inherit',
-  fontSize: 13,
-};
-
-const footerStyle: React.CSSProperties = {
-  padding: '4px 10px',
-  borderTop: '1px solid #e0e0e0',
-  fontSize: 12,
-  color: '#78909c',
-};
+const CodeIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="m9 18-6-6 6-6" />
+    <path d="m15 6 6 6-6 6" />
+  </svg>
+);
 
 const ExpandIcon = () => (
   <svg
@@ -82,17 +79,39 @@ const summarize = (database: Database): string => {
   return `${tables} ${tablesLabel} · ${refs} ${refsLabel}`;
 };
 
+const iconButtonStyle = (palette: DbmlPalette): React.CSSProperties => ({
+  border: `1px solid ${palette.buttonBorder}`,
+  background: 'transparent',
+  color: 'inherit',
+  padding: '3px 8px',
+  cursor: 'pointer',
+  font: 'inherit',
+  lineHeight: 0,
+});
+
 export const DbmlDiagram = ({ source }: { source: string }) => {
   const result = useMemo(() => parseDbml(source), [source]);
   const [expanded, setExpanded] = useState(false);
   const [view, setView] = useState<'diagram' | 'code'>('diagram');
+  const { palette } = useDbmlTheme();
+
+  // Explicit background and text colors: the frame lives in the TechDocs
+  // shadow DOM and must not inherit the page styles.
+  const frameStyle: React.CSSProperties = {
+    border: `1px solid ${palette.border}`,
+    borderRadius: 4,
+    margin: '1em 0',
+    overflow: 'hidden',
+    background: palette.frameBg,
+    color: palette.text,
+  };
 
   if ('error' in result) {
     return (
       <div
         style={{
           ...frameStyle,
-          borderColor: '#c62828',
+          borderColor: palette.errorBorder,
           padding: '0.75em 1em',
         }}
         data-testid="dbml-error"
@@ -103,35 +122,91 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
     );
   }
 
-  const viewButton = (target: 'diagram' | 'code', label: string) => (
+  // Segmented control: borderless icon buttons with a filled pill that
+  // slides to the active one.
+  const SEGMENT_WIDTH = 30;
+  const SEGMENT_HEIGHT = 24;
+  const SEGMENT_GAP = 4;
+
+  const viewButton = (
+    target: 'diagram' | 'code',
+    label: string,
+    icon: React.ReactNode,
+  ) => (
     <button
       type="button"
       style={{
-        ...buttonStyle,
-        ...(view === target
-          ? { background: '#37474f', color: '#ffffff', borderColor: '#37474f' }
-          : {}),
-        ...(target === 'diagram'
-          ? { borderRadius: '4px 0 0 4px' }
-          : { borderRadius: '0 4px 4px 0', marginLeft: -1 }),
+        position: 'relative',
+        width: SEGMENT_WIDTH,
+        height: SEGMENT_HEIGHT,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: 'none',
+        borderRadius: 4,
+        background: 'transparent',
+        padding: 0,
+        cursor: 'pointer',
+        font: 'inherit',
+        color: view === target ? palette.activeText : 'inherit',
+        transition: 'color 150ms ease',
       }}
       aria-pressed={view === target}
+      aria-label={label}
+      title={label}
       onClick={() => setView(target)}
     >
-      {label}
+      {icon}
     </button>
   );
 
   return (
     <div style={frameStyle} data-testid="dbml-diagram">
-      <div style={toolbarStyle}>
-        <span>
-          {viewButton('diagram', 'Diagram')}
-          {viewButton('code', 'Code')}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 10px',
+          borderBottom: `1px solid ${palette.divider}`,
+          fontSize: 13,
+        }}
+      >
+        <span
+          role="group"
+          aria-label="View"
+          style={{
+            position: 'relative',
+            display: 'inline-flex',
+            gap: SEGMENT_GAP,
+            padding: 3,
+            border: `1px solid ${palette.divider}`,
+            borderRadius: 6,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: 3,
+              left: 3,
+              width: SEGMENT_WIDTH,
+              height: SEGMENT_HEIGHT,
+              borderRadius: 4,
+              background: palette.activeBg,
+              transform:
+                view === 'diagram'
+                  ? 'translateX(0)'
+                  : `translateX(${SEGMENT_WIDTH + SEGMENT_GAP}px)`,
+              transition: 'transform 150ms ease',
+            }}
+          />
+          {viewButton('diagram', 'Diagram view', <DiagramIcon />)}
+          {viewButton('code', 'Code view', <CodeIcon />)}
         </span>
         <button
           type="button"
-          style={{ ...buttonStyle, borderRadius: 4, padding: '3px 8px' }}
+          style={{ ...iconButtonStyle(palette), borderRadius: 4 }}
           aria-label="Expand diagram"
           title="Expand diagram"
           onClick={() => setExpanded(true)}
@@ -153,10 +228,19 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
           }}
           data-testid="dbml-source"
         >
-          <code>{highlightDbml(source.trim())}</code>
+          <code>{highlightDbml(source.trim(), palette.code)}</code>
         </pre>
       )}
-      <div style={footerStyle}>{summarize(result.database)}</div>
+      <div
+        style={{
+          padding: '4px 10px',
+          borderTop: `1px solid ${palette.divider}`,
+          fontSize: 12,
+          color: palette.muted,
+        }}
+      >
+        {summarize(result.database)}
+      </div>
       {expanded && (
         <DiagramDialog
           title={summarize(result.database)}
