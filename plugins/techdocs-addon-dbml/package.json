@@ -9,8 +9,9 @@
     "access": "public"
   },
   "backstage": {
-    "role": "frontend-plugin",
-    "pluginId": "techdocs-addon-dbml"
+    "role": "frontend-plugin-module",
+    "pluginId": "techdocs",
+    "pluginPackage": "@backstage/plugin-techdocs"
   },
   "keywords": [
     "backstage",

@@ -1,0 +1,1 @@
+export { techdocsDbmlModule } from './techdocsDbmlModule';
