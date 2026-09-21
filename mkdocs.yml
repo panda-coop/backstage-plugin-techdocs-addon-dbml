@@ -1,21 +1,10 @@
 site_name: backstage-plugin-techdocs-addon-dbml
 site_description: Fixture TechDocs site for developing the DBML addon
-
 nav:
   - Home: index.md
   - DBML samples:
       - Simple schema: samples/simple.md
       - Large schema: samples/large.md
       - Invalid DBML: samples/invalid.md
-
 plugins:
   - techdocs-core
-
-# Emit ```dbml fences as <pre class="dbml"><code> instead of generic
-# highlighted text, so the addon can find them deterministically.
-markdown_extensions:
-  - pymdownx.superfences:
-      custom_fences:
-        - name: dbml
-          class: dbml
-          format: !!python/name:pymdownx.superfences.fence_code_format

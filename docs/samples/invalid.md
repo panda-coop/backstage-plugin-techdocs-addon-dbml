@@ -1,7 +1,8 @@
 # Invalid DBML
 
-This fence is intentionally broken; the addon must show a parse error
-instead of crashing the page or silently hiding the block.
+TechDocs loses the fence language for unknown languages, so the addon
+claims a text block only when it actually parses as DBML. This broken
+fence must therefore stay rendered as a plain code block:
 
 ```dbml
 Table users {
@@ -9,7 +10,7 @@ Table users {
   username
 ```
 
-A valid block after the broken one must still render:
+A valid block after the broken one must still render as a diagram:
 
 ```dbml
 Table healthy {
