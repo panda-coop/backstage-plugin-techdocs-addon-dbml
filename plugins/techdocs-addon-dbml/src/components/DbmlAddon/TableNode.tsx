@@ -251,7 +251,7 @@ export const TableNode = ({ id, data }: NodeProps<TableFlowNode>) => {
 };
 
 export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
-  const { mode } = useDbmlTheme();
+  const { mode, palette } = useDbmlTheme();
   const toggle = useContext(CollapseContext);
   const cycle = GROUP_COLORS[mode];
   const color = data.color || cycle[data.colorIndex % cycle.length];
@@ -261,9 +261,10 @@ export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
       style={{
         width: '100%',
         height: '100%',
-        border: `1px solid color-mix(in srgb, ${color} 40%, transparent)`,
         borderRadius: 8,
-        background: `color-mix(in srgb, ${color} 9%, transparent)`,
+        // Opaque tint: mixing over the canvas color instead of transparent
+        // keeps edges and the dot grid from showing through the fill.
+        background: `color-mix(in srgb, ${color} 12%, ${palette.canvasBg})`,
       }}
     >
       <NodeTooltip
