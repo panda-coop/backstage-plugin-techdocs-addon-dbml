@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts", "src/alpha.ts"],
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "../../docs/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "disableSources": false,
+  "sourceLinkTemplate": "https://github.com/panda-coop/backstage-plugin-techdocs-addon-dbml/blob/main/{path}#L{line}",
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "entryFileName": "index",
+  "cleanOutputDir": true
+}
