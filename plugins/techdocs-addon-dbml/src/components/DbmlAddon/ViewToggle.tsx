@@ -6,8 +6,8 @@ const SEGMENT_WIDTH = 30;
 const SEGMENT_HEIGHT = 24;
 const SEGMENT_GAP = 4;
 
-// dbdiagram-style diagram glyph: three filled dots (two top corners, one
-// bottom center) joined by an inverted-T connector.
+// Diagram glyph: three filled dots chained by a diagonal zigzag —
+// top-right, down-left to the middle, down-right to the bottom.
 const DiagramIcon = () => (
   <svg
     width="16"
@@ -19,10 +19,10 @@ const DiagramIcon = () => (
     strokeLinecap="round"
     aria-hidden="true"
   >
-    <path d="M5 6h14M12 6v12" />
-    <circle cx="5" cy="6" r="2.5" fill="currentColor" stroke="none" />
-    <circle cx="19" cy="6" r="2.5" fill="currentColor" stroke="none" />
-    <circle cx="12" cy="18" r="2.5" fill="currentColor" stroke="none" />
+    <path d="M18 5 6 12l12 7" />
+    <circle cx="18" cy="5" r="2.5" fill="currentColor" stroke="none" />
+    <circle cx="6" cy="12" r="2.5" fill="currentColor" stroke="none" />
+    <circle cx="18" cy="19" r="2.5" fill="currentColor" stroke="none" />
   </svg>
 );
 
