@@ -25,7 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No Python lockfile in this repo (uvx only) — caching would never
+      # invalidate and only warns.
       - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
 
       # Zensical is pre-1.0; the pin keeps CI reproducible — bump it
       # deliberately together with a local `uvx zensical==<v> build`.
