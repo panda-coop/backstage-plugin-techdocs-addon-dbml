@@ -1,8 +1,12 @@
 import { Parser } from '@dbml/core';
-import { MarkerType } from '@xyflow/react';
 import { dbmlToFlow, type TableFlowNode } from './dbmlToFlow';
 
 const DBML = `
+Enum post_status {
+  draft
+  published [note: 'visible']
+}
+
 Table users {
   id integer [primary key]
   username varchar [not null, note: 'login name']
@@ -12,6 +16,7 @@ Table users {
 Table posts [headerColor: #3498db] {
   id integer [primary key]
   user_id integer
+  status post_status
 }
 
 Ref: posts.user_id > users.id
@@ -42,15 +47,31 @@ describe('dbmlToFlow', () => {
       unique: false,
       notNull: true,
       note: 'login name',
+      enum: undefined,
     });
     const posts = tables.find(n => n.id === 'public.posts')!;
     expect(posts.data.headerColor).toBe('#3498db');
   });
 
-  it('maps table groups to parent nodes', () => {
+  it('binds enum-typed fields to their declared enum values', () => {
+    const posts = tables.find(n => n.id === 'public.posts')!;
+    const status = posts.data.fields.find(f => f.name === 'status')!;
+    expect(status.enum).toEqual({
+      name: 'post_status',
+      values: [
+        { name: 'draft', note: undefined },
+        { name: 'published', note: 'visible' },
+      ],
+    });
+    const id = posts.data.fields.find(f => f.name === 'id')!;
+    expect(id.enum).toBeUndefined();
+  });
+
+  it('maps table groups to parent nodes with color and order index', () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].data.label).toBe('content');
     expect(groups[0].data.color).toBe('#8e44ad');
+    expect(groups[0].data.colorIndex).toBe(0);
     const posts = tables.find(n => n.id === 'public.posts')!;
     expect(posts.parentId).toBe(groups[0].id);
     const users = tables.find(n => n.id === 'public.users')!;
@@ -63,16 +84,19 @@ describe('dbmlToFlow', () => {
     );
   });
 
-  it('maps refs to field-anchored edges with an arrow at the one side', () => {
+  it('maps refs to field-anchored relationship edges with cardinality', () => {
     expect(edges).toHaveLength(1);
     expect(edges[0]).toMatchObject({
       source: 'public.posts',
       sourceHandle: 'user_id-source',
       target: 'public.users',
       targetHandle: 'id-target',
+      type: 'dbmlRelationship',
+      data: { sourceMany: true, targetMany: false },
     });
     expect(edges[0].markerStart).toBeUndefined();
-    expect(edges[0].markerEnd).toMatchObject({ type: MarkerType.ArrowClosed });
+    expect(edges[0].markerEnd).toBeUndefined();
+    expect(edges[0].style).toBeUndefined();
   });
 
   it('lays out tables at distinct positions', () => {

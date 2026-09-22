@@ -2,7 +2,6 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
   HEADER_HEIGHT,
   NODE_WIDTH,
-  NOTE_HEIGHT,
   ROW_HEIGHT,
   type GroupFlowNode,
   type TableFlowNode,
@@ -44,23 +43,6 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
       >
         {data.label}
       </div>
-      {data.note && (
-        <div
-          style={{
-            height: NOTE_HEIGHT,
-            lineHeight: `${NOTE_HEIGHT}px`,
-            padding: '0 10px',
-            fontStyle: 'italic',
-            color: palette.muted,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={data.note}
-        >
-          {data.note}
-        </div>
-      )}
       {data.fields.map(field => (
         <div
           key={field.name}

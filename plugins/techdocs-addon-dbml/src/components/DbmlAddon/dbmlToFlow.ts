@@ -1,7 +1,11 @@
 import dagre from '@dagrejs/dagre';
 import type { Database } from '@dbml/core';
-import { MarkerType, type Edge, type Node } from '@xyflow/react';
-import { PALETTES, type DbmlPalette } from './palette';
+import type { Edge, Node } from '@xyflow/react';
+
+export type FieldEnum = {
+  name: string;
+  values: Array<{ name: string; note?: string }>;
+};
 
 export type TableField = {
   name: string;
@@ -10,6 +14,7 @@ export type TableField = {
   unique: boolean;
   notNull: boolean;
   note?: string;
+  enum?: FieldEnum;
 };
 
 export type TableNodeData = {
@@ -23,9 +28,21 @@ export type TableNodeData = {
 export type GroupNodeData = {
   label: string;
   color?: string;
+  colorIndex: number;
   note?: string;
   [key: string]: unknown;
 };
+
+export type RelationshipEdgeData = {
+  sourceMany: boolean;
+  targetMany: boolean;
+  [key: string]: unknown;
+};
+
+export type RelationshipFlowEdge = Edge<
+  RelationshipEdgeData,
+  'dbmlRelationship'
+>;
 
 export type TableFlowNode = Node<TableNodeData, 'dbmlTable'>;
 export type GroupFlowNode = Node<GroupNodeData, 'dbmlGroup'>;
@@ -36,27 +53,24 @@ export type DbmlFlowNode = TableFlowNode | GroupFlowNode;
 export const NODE_WIDTH = 240;
 export const HEADER_HEIGHT = 34;
 export const ROW_HEIGHT = 26;
-export const NOTE_HEIGHT = 22;
 export const GROUP_LABEL_HEIGHT = 28;
 
-export const nodeHeight = (fieldCount: number, hasNote: boolean) =>
-  HEADER_HEIGHT + fieldCount * ROW_HEIGHT + (hasNote ? NOTE_HEIGHT : 0);
+export const nodeHeight = (fieldCount: number) =>
+  HEADER_HEIGHT + fieldCount * ROW_HEIGHT;
 
 const tableId = (schemaName: string | null | undefined, tableName: string) =>
   `${schemaName || 'public'}.${tableName}`;
 
-export function dbmlToFlow(
-  database: Database,
-  palette: DbmlPalette = PALETTES.light,
-): {
+export function dbmlToFlow(database: Database): {
   nodes: DbmlFlowNode[];
-  edges: Edge[];
+  edges: RelationshipFlowEdge[];
 } {
   const tables: TableFlowNode[] = [];
   const groups: GroupFlowNode[] = [];
-  const edges: Edge[] = [];
+  const edges: RelationshipFlowEdge[] = [];
   const groupOfTable = new Map<string, string>();
   const multiSchema = (database.schemas ?? []).length > 1;
+  let groupIndex = 0;
 
   for (const schema of database.schemas ?? []) {
     for (const group of schema.tableGroups ?? []) {
@@ -67,10 +81,13 @@ export function dbmlToFlow(
         position: { x: 0, y: 0 },
         data: {
           label: group.name,
-          color: group.color || undefined,
+          color:
+            group.color && group.color !== 'none' ? group.color : undefined,
+          colorIndex: groupIndex,
           note: group.note || undefined,
         },
       });
+      groupIndex += 1;
       for (const table of group.tables ?? []) {
         groupOfTable.set(tableId(schema.name, table.name), groupId);
       }
@@ -84,6 +101,17 @@ export function dbmlToFlow(
         unique: Boolean(field.unique),
         notNull: Boolean(field.not_null),
         note: field.note || undefined,
+        // The parser binds column types to declared enums (schema-qualified
+        // resolution included), so detection is just reading the property.
+        enum: field._enum
+          ? {
+              name: field._enum.name,
+              values: (field._enum.values ?? []).map(value => ({
+                name: value.name,
+                note: value.note || undefined,
+              })),
+            }
+          : undefined,
       }));
       tables.push({
         id: tableId(schema.name, table.name),
@@ -103,24 +131,19 @@ export function dbmlToFlow(
       if (!from || !to) {
         return;
       }
-      // Arrowheads point at the "one" side, reading as a foreign-key
-      // reference: posts.user_id ──▶ users.id.
-      const arrow = {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20,
-        color: palette.arrow,
-      };
+      // Cardinality per endpoint feeds the crow's foot rendering; the
+      // relation can be a range ('0..1'), so "many" means it contains '*'.
       edges.push({
         id: `${schema.name}-ref-${refIndex}`,
         source: tableId(from.schemaName, from.tableName),
         sourceHandle: `${from.fieldNames?.[0] ?? ''}-source`,
         target: tableId(to.schemaName, to.tableName),
         targetHandle: `${to.fieldNames?.[0] ?? ''}-target`,
-        type: 'smoothstep',
-        style: { stroke: palette.edge, strokeWidth: 1.5 },
-        markerStart: from.relation === '1' ? arrow : undefined,
-        markerEnd: to.relation === '1' ? arrow : undefined,
+        type: 'dbmlRelationship',
+        data: {
+          sourceMany: String(from.relation ?? '').includes('*'),
+          targetMany: String(to.relation ?? '').includes('*'),
+        },
       });
     });
   }
@@ -134,7 +157,7 @@ export function dbmlToFlow(
   for (const table of tables) {
     graph.setNode(table.id, {
       width: NODE_WIDTH,
-      height: nodeHeight(table.data.fields.length, Boolean(table.data.note)),
+      height: nodeHeight(table.data.fields.length),
     });
     const parent = groupOfTable.get(table.id);
     if (parent) {
@@ -158,10 +181,7 @@ export function dbmlToFlow(
 
   for (const table of tables) {
     const placed = graph.node(table.id);
-    const height = nodeHeight(
-      table.data.fields.length,
-      Boolean(table.data.note),
-    );
+    const height = nodeHeight(table.data.fields.length);
     let x = placed.x - NODE_WIDTH / 2;
     let y = placed.y - height / 2;
     const parentId = groupOfTable.get(table.id);

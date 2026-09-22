@@ -42,10 +42,7 @@ export const DiagramCanvas = ({
   wheelZoom?: boolean;
 }) => {
   const { mode, palette } = useDbmlTheme();
-  const { nodes, edges } = useMemo(
-    () => dbmlToFlow(database, palette),
-    [database, palette],
-  );
+  const { nodes, edges } = useMemo(() => dbmlToFlow(database), [database]);
 
   // The zoom/fit controls follow the widget chrome (paper surface) instead
   // of React Flow's own colorMode styling.
