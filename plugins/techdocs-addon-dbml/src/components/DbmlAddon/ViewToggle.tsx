@@ -17,11 +17,11 @@ const DiagramIcon = () => (
     fill="none"
     aria-hidden="true"
   >
-    <rect x="2" y="8.5" width="7" height="7" rx="2" fill="currentColor" />
-    <rect x="15" y="2" width="7" height="7" rx="2" fill="currentColor" />
-    <rect x="15" y="15" width="7" height="7" rx="2" fill="currentColor" />
+    <rect x="2.5" y="9" width="6" height="6" rx="1.75" fill="currentColor" />
+    <rect x="15.5" y="2.5" width="6" height="6" rx="1.75" fill="currentColor" />
+    <rect x="15.5" y="15.5" width="6" height="6" rx="1.75" fill="currentColor" />
     <path
-      d="M9 12h3M15 5.5h-1.5a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5H15"
+      d="M8.5 12H12M15.5 5.5h-2a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5h2"
       stroke="currentColor"
       strokeWidth="2"
     />
@@ -41,9 +41,9 @@ const CodeIcon = () => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="m8 17-5-5 5-5" />
-    <path d="m16 7 5 5-5 5" />
-    <line x1="13.5" y1="5" x2="10.5" y2="19" />
+    <path d="M8 8.5 4.5 12 8 15.5" />
+    <path d="m16 8.5 3.5 3.5-3.5 3.5" />
+    <line x1="13.75" y1="4.5" x2="10.25" y2="19.5" />
   </svg>
 );
 
