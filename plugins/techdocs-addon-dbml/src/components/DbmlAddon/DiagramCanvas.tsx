@@ -1,12 +1,18 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Background,
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
 } from '@xyflow/react';
 import type { Database } from '@dbml/core';
-import { dbmlToFlow } from './dbmlToFlow';
+import {
+  dbmlToFlow,
+  type DbmlFlowNode,
+  type RelationshipFlowEdge,
+} from './dbmlToFlow';
 import { GroupNode, TableNode } from './TableNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { XYFLOW_STYLES } from './xyflowStyles';
@@ -44,7 +50,18 @@ export const DiagramCanvas = ({
   wheelZoom?: boolean;
 }) => {
   const { mode, palette } = useDbmlTheme();
-  const { nodes, edges } = useMemo(() => dbmlToFlow(database), [database]);
+  // Controlled state: dbmlToFlow output is the canonical layout, user
+  // drags mutate React state (group growth and collapse derive from it).
+  const initial = useMemo(() => dbmlToFlow(database), [database]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<DbmlFlowNode>(
+    initial.nodes,
+  );
+  const [edges, setEdges, onEdgesChange] =
+    useEdgesState<RelationshipFlowEdge>(initial.edges);
+  useEffect(() => {
+    setNodes(initial.nodes);
+    setEdges(initial.edges);
+  }, [initial, setNodes, setEdges]);
 
   // dbdiagram-style edges: thin grey smoothstep, crow's foot glyphs at the
   // ends, both recoloring together on hover/selection. Handles stay in the
@@ -105,8 +122,10 @@ export const DiagramCanvas = ({
       </style>
       <ReactFlowProvider>
         <ReactFlow
-          defaultNodes={nodes}
-          defaultEdges={edges}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={mode}
