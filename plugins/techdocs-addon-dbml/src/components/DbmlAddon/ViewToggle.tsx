@@ -17,11 +17,11 @@ const DiagramIcon = () => (
     fill="none"
     aria-hidden="true"
   >
-    <rect x="1.5" y="9" width="6" height="6" rx="1.75" fill="currentColor" />
-    <rect x="17" y="2.5" width="6" height="6" rx="1.75" fill="currentColor" />
-    <rect x="17" y="15.5" width="6" height="6" rx="1.75" fill="currentColor" />
+    <rect x="2.5" y="9" width="6" height="6" rx="1.75" fill="currentColor" />
+    <rect x="15.5" y="2.5" width="6" height="6" rx="1.75" fill="currentColor" />
+    <rect x="15.5" y="15.5" width="6" height="6" rx="1.75" fill="currentColor" />
     <path
-      d="M7.5 12H12M17 5.5h-3.5a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5H17"
+      d="M8.5 12H12M15.5 5.5h-2a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5h2"
       stroke="currentColor"
       strokeWidth="2"
     />
