@@ -141,8 +141,11 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
       </div>
       {expanded && (
         <DiagramDialog
-          title={summarize(result.database)}
+          summary={summarize(result.database)}
           database={result.database}
+          source={source}
+          view={view}
+          onViewChange={setView}
           onClose={() => setExpanded(false)}
         />
       )}
