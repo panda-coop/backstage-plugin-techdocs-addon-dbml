@@ -36,8 +36,11 @@ Run the checks with `yarn tsc`, `yarn lint:all`, and `yarn test`.
 
 `docs/` is built two ways from one tree: the dev app's TechDocs builder
 uses the root `mkdocs.yml` (with `techdocs-core`), while the public site
+at
+<https://panda-coop.github.io/backstage-plugin-techdocs-addon-dbml/>
 is built with [Zensical](https://zensical.org) from `zensical.toml`
-(classic theme):
+(classic theme) and deployed by the `docs` workflow on pushes to `main`
+that touch `docs/` or `zensical.toml`:
 
 ```sh
 uvx zensical serve   # live-reload preview
