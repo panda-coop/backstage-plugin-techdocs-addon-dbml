@@ -1,6 +1,6 @@
 {
   "name": "backstage-plugin-techdocs-addon-dbml",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Backstage TechDocs addon rendering interactive DBML diagrams",
   "license": "GPL-3.0-or-later",
   "main": "src/index.ts",
