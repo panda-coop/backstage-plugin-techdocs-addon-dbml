@@ -9,6 +9,8 @@ import {
   type TableFlowNode,
 } from './dbmlToFlow';
 import { GROUP_COLORS, useDbmlTheme } from './palette';
+import { NodeTooltip } from './NodeTooltip';
+import type { FieldEnum } from './dbmlToFlow';
 
 /**
  * Collapse toggling lives in DiagramCanvas (it owns the collapsed set and
@@ -20,6 +22,36 @@ export const GroupCollapseContext = createContext<(groupId: string) => void>(
 );
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+
+const NoteIcon = () => (
+  <svg
+    width={12}
+    height={12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    aria-hidden
+    style={{ flexShrink: 0, opacity: 0.85 }}
+  >
+    <circle cx="12" cy="12" r="9" />
+    <line x1="12" y1="11" x2="12" y2="17" />
+    <line x1="12" y1="7" x2="12" y2="7.5" />
+  </svg>
+);
+
+const enumTip = (fieldEnum: FieldEnum) => (
+  <span>
+    <span style={{ display: 'block', fontWeight: 600 }}>{fieldEnum.name}</span>
+    {fieldEnum.values.map(value => (
+      <span key={value.name} style={{ display: 'block' }}>
+        {value.name}
+        {value.note ? ` — ${value.note}` : ''}
+      </span>
+    ))}
+  </span>
+);
 
 export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
   const { palette } = useDbmlTheme();
@@ -34,41 +66,51 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
         color: palette.text,
         fontFamily: mono,
         fontSize: 12,
-        overflow: 'hidden',
         boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
       }}
     >
-      <div
+      <NodeTooltip
+        content={data.note}
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
           height: HEADER_HEIGHT,
-          lineHeight: `${HEADER_HEIGHT}px`,
           padding: '0 10px',
           background: data.headerColor || palette.header,
           color: palette.headerText,
           fontWeight: 600,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          // The root no longer clips (overflow would cut off tooltips), so
+          // the header rounds its own top corners.
+          borderRadius: '5px 5px 0 0',
         }}
-        title={data.note}
       >
-        {data.label}
-      </div>
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {data.label}
+        </span>
+        {data.note && <NoteIcon />}
+      </NodeTooltip>
       {data.fields.map(field => (
-        <div
+        <NodeTooltip
           key={field.name}
+          content={field.note}
           style={{
             position: 'relative',
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
             gap: 8,
             height: ROW_HEIGHT,
-            lineHeight: `${ROW_HEIGHT}px`,
             padding: '0 10px',
             borderTop: `1px solid ${palette.rowBorder}`,
             whiteSpace: 'nowrap',
           }}
-          title={field.note}
         >
           {/* Invisible (hidden via the canvas stylesheet) but measured, so
               edges keep anchoring to the column row. */}
@@ -81,9 +123,37 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
           <span style={{ fontWeight: field.pk ? 700 : 400 }}>
             {field.pk ? `${field.name} [pk]` : field.name}
           </span>
-          <span style={{ color: palette.muted }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              color: palette.muted,
+            }}
+          >
             {field.type}
             {field.notNull && !field.pk ? ' *' : ''}
+            {field.enum && (
+              <NodeTooltip
+                content={enumTip(field.enum)}
+                style={{ display: 'inline-flex' }}
+              >
+                <span
+                  aria-label={`enum ${field.enum.name}`}
+                  style={{
+                    display: 'inline-block',
+                    padding: '0 3px',
+                    fontSize: 9,
+                    lineHeight: '12px',
+                    fontWeight: 700,
+                    border: `1px solid ${palette.muted}`,
+                    borderRadius: 3,
+                  }}
+                >
+                  E
+                </span>
+              </NodeTooltip>
+            )}
           </span>
           <Handle
             type="source"
@@ -91,7 +161,7 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
             id={`${field.name}-source`}
             isConnectable={false}
           />
-        </div>
+        </NodeTooltip>
       ))}
     </div>
   );
@@ -132,9 +202,9 @@ export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
         borderRadius: 8,
         background: `color-mix(in srgb, ${color} 9%, transparent)`,
       }}
-      title={data.note}
     >
-      <div
+      <NodeTooltip
+        content={data.note}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -146,8 +216,6 @@ export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
           fontWeight: 600,
           color,
           whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
         }}
       >
         <button
@@ -171,8 +239,12 @@ export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
         >
           <ChevronIcon collapsed={collapsed} />
         </button>
-        <span>{data.label}</span>
-      </div>
+        <span
+          style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {data.label}
+        </span>
+      </NodeTooltip>
       {/* Anchors for edges re-pointed to a collapsed group; hidden like all
           handles, centered on the header row. */}
       <Handle
