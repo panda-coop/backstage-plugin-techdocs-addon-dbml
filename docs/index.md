@@ -1,30 +1,24 @@
-# DBML addon fixture docs
+# backstage-plugin-techdocs-addon-dbml
 
-This TechDocs site exists to exercise the `backstage-plugin-techdocs-addon-dbml`
-addon during development. Each page under **DBML samples** contains `dbml`
-code fences the addon should pick up and replace with an interactive diagram.
+A Backstage TechDocs addon that replaces `dbml` code fences in TechDocs
+pages with interactive entity-relationship diagrams. Parsing is done
+with [`@dbml/core`](https://www.dbml.org/), rendering with React Flow.
 
-A minimal inline sample:
+| Capability | Notes |
+|---|---|
+| Interactive diagram | Draggable tables, pan/zoom, auto-layout (dagre) |
+| Crow's foot edges | Cardinality derived from the `Ref` operator |
+| Table groups | `TableGroup` renders as tinted containers with collapse |
+| Collapsible tables | Chevron in the table header |
+| Code view | Context-aware DBML syntax highlighting |
+| Expand dialog | Near-fullscreen modal sharing the diagram/code view |
+| Theming | Colors resolve from the active Backstage MUI theme |
 
-```dbml
-Table users {
-  id integer [primary key]
-  username varchar [unique, not null]
-  created_at timestamp
-}
+Where to go next:
 
-Table posts {
-  id integer [primary key]
-  user_id integer [not null]
-  title varchar
-  body text
-}
-
-Ref: posts.user_id > users.id
-```
-
-Regular code fences must stay untouched:
-
-```sql
-SELECT id, username FROM users WHERE created_at > now() - interval '1 day';
-```
+- [Installation](installation.md) — add the package to your app.
+- [Usage](usage.md) — wire the addon into the new or classic frontend system.
+- [Authoring](authoring.md) — how DBML blocks in TechDocs pages are detected.
+- [Features](features.md) — what the rendered diagram can do.
+- [Examples](example/index.md) — live sample pages (these also serve as the
+  development fixture for this repo).

@@ -94,4 +94,9 @@ TableGroup fulfillment [color: #d35400] {
   order_lines
   payments
 }
+
+TableGroup crm {
+  customers
+  addresses
+}
 ```
