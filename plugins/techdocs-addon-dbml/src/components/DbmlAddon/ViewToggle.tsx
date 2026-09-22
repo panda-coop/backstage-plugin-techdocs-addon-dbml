@@ -6,23 +6,25 @@ const SEGMENT_WIDTH = 30;
 const SEGMENT_HEIGHT = 24;
 const SEGMENT_GAP = 4;
 
-// Diagram glyph: three filled dots chained by a diagonal zigzag —
-// top-right, down-left to the middle, down-right to the bottom.
+// Sitemap/hierarchy glyph rotated to flow left-to-right: a parent square
+// on the left, two child squares stacked on the right, joined by a stem
+// into a rounded-corner vertical bar.
 const DiagramIcon = () => (
   <svg
     width="16"
     height="16"
     viewBox="0 0 24 24"
     fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
     aria-hidden="true"
   >
-    <path d="M18 5 6 12l12 7" />
-    <circle cx="18" cy="5" r="2.5" fill="currentColor" stroke="none" />
-    <circle cx="6" cy="12" r="2.5" fill="currentColor" stroke="none" />
-    <circle cx="18" cy="19" r="2.5" fill="currentColor" stroke="none" />
+    <rect x="2" y="8.5" width="7" height="7" rx="2" fill="currentColor" />
+    <rect x="15" y="2" width="7" height="7" rx="2" fill="currentColor" />
+    <rect x="15" y="15" width="7" height="7" rx="2" fill="currentColor" />
+    <path
+      d="M9 12h3M15 5.5h-1.5a1.5 1.5 0 0 0-1.5 1.5v10a1.5 1.5 0 0 0 1.5 1.5H15"
+      stroke="currentColor"
+      strokeWidth="2"
+    />
   </svg>
 );
 
