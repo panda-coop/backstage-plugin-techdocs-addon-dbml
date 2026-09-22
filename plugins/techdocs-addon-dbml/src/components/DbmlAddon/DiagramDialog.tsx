@@ -88,14 +88,7 @@ export const DiagramDialog = ({
             borderBottom: `1px solid ${palette.divider}`,
           }}
         >
-          <span
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 16 }}
-          >
-            <ViewToggle view={view} onChange={onViewChange} palette={palette} />
-            <span style={{ fontSize: 13, color: palette.muted }}>
-              {summary}
-            </span>
-          </span>
+          <ViewToggle view={view} onChange={onViewChange} palette={palette} />
           <button
             type="button"
             style={{
@@ -133,6 +126,18 @@ export const DiagramDialog = ({
               </code>
             </pre>
           )}
+        </div>
+        {/* Same summary footer as the inline block. */}
+        <div
+          data-testid="dbml-dialog-footer"
+          style={{
+            padding: '4px 10px',
+            borderTop: `1px solid ${palette.divider}`,
+            fontSize: 12,
+            color: palette.muted,
+          }}
+        >
+          {summary}
         </div>
       </div>
     </div>,
