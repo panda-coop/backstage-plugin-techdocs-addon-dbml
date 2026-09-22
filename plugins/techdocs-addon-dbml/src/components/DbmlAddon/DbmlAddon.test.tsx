@@ -72,6 +72,39 @@ describe('Dbml addon', () => {
     expect(diagram.querySelector('.react-flow')).not.toBeNull();
   });
 
+  it('collapses a table to its header via the chevron', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <div className="language-text highlight">
+          <pre>
+            <code>{DBML_FIXTURE}</code>
+          </pre>
+        </div>
+      </body>,
+    );
+
+    const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]')!;
+    expect(diagram.textContent).toContain('username');
+
+    const chevrons = diagram.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label="Collapse table"]',
+    );
+    expect(chevrons.length).toBe(2);
+    // The users table renders first; collapsing it hides its rows.
+    fireEvent.click(chevrons[0]);
+    expect(diagram.textContent).not.toContain('username');
+    expect(diagram.textContent).toContain('users');
+    // Footer summary is untouched.
+    expect(diagram.textContent).toContain('2 tables · 1 relationship');
+
+    fireEvent.click(
+      diagram.querySelector<HTMLButtonElement>(
+        'button[aria-label="Expand table"]',
+      )!,
+    );
+    expect(diagram.textContent).toContain('username');
+  });
+
   it('opens and closes the expanded diagram dialog', async () => {
     const { shadowRoot } = await renderDom(
       <body>

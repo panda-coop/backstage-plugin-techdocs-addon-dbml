@@ -1,18 +1,116 @@
+import { createContext, useContext } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import {
+  GROUP_LABEL_HEIGHT,
   HEADER_HEIGHT,
   NODE_WIDTH,
-  NOTE_HEIGHT,
   ROW_HEIGHT,
   type GroupFlowNode,
   type TableFlowNode,
 } from './dbmlToFlow';
-import { useDbmlTheme } from './palette';
+import { GROUP_COLORS, useDbmlTheme } from './palette';
+import { NodeTooltip } from './NodeTooltip';
+import type { FieldEnum } from './dbmlToFlow';
+
+/**
+ * Collapse toggling lives in DiagramCanvas (it owns the collapsed sets
+ * and the derived nodes/edges); a context keeps the callback out of node
+ * data, so node objects stay serializable and memo-friendly. Both
+ * GroupNode and TableNode hand back their node id; the canvas dispatches
+ * on node type.
+ */
+export const CollapseContext = createContext<(nodeId: string) => void>(
+  () => {},
+);
+
+const chevronButtonStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: 0,
+  border: 'none',
+  background: 'transparent',
+  color: 'inherit',
+  cursor: 'pointer',
+};
+
+const ChevronIcon = ({ collapsed }: { collapsed: boolean }) => (
+  <svg
+    width={12}
+    height={12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+    style={{
+      transform: collapsed ? 'rotate(-90deg)' : 'none',
+      transition: 'transform 150ms ease',
+    }}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
-export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
+// A note sheet: rounded page with two text lines.
+const NoteIcon = () => (
+  <svg
+    width={12}
+    height={12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    aria-hidden
+    style={{ flexShrink: 0, opacity: 0.85 }}
+  >
+    <rect x="5" y="4" width="14" height="16" rx="2" />
+    <line x1="9" y1="9" x2="15" y2="9" />
+    <line x1="9" y1="13" x2="15" y2="13" />
+  </svg>
+);
+
+const enumTip = (fieldEnum: FieldEnum) => (
+  <span>
+    <span style={{ display: 'block', fontWeight: 600 }}>{fieldEnum.name}</span>
+    {fieldEnum.values.map(value => (
+      <span key={value.name} style={{ display: 'block' }}>
+        {value.name}
+        {value.note ? ` — ${value.note}` : ''}
+      </span>
+    ))}
+  </span>
+);
+
+// Hovering the row surfaces everything about the column: its note, its
+// enum values, or both.
+const rowTip = (field: {
+  note?: string;
+  enum?: FieldEnum;
+}): React.ReactNode | undefined => {
+  if (!field.note && !field.enum) {
+    return undefined;
+  }
+  return (
+    <span>
+      {field.note && <span style={{ display: 'block' }}>{field.note}</span>}
+      {field.enum && (
+        <span style={{ display: 'block', marginTop: field.note ? 4 : 0 }}>
+          {enumTip(field.enum)}
+        </span>
+      )}
+    </span>
+  );
+};
+
+export const TableNode = ({ id, data }: NodeProps<TableFlowNode>) => {
   const { palette } = useDbmlTheme();
+  const toggle = useContext(CollapseContext);
+  const collapsed = Boolean(data.collapsed);
 
   return (
     <div
@@ -24,121 +122,201 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
         color: palette.text,
         fontFamily: mono,
         fontSize: 12,
-        overflow: 'hidden',
         boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
       }}
     >
-      <div
+      {/* Anchors for edges re-pointed to a collapsed table; hidden like
+          all handles, centered on the header row. */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="table-target"
+        style={{ top: HEADER_HEIGHT / 2 }}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="table-source"
+        style={{ top: HEADER_HEIGHT / 2 }}
+        isConnectable={false}
+      />
+      <NodeTooltip
+        content={data.note}
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
           height: HEADER_HEIGHT,
-          lineHeight: `${HEADER_HEIGHT}px`,
           padding: '0 10px',
           background: data.headerColor || palette.header,
           color: palette.headerText,
           fontWeight: 600,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+          // The root no longer clips (overflow would cut off tooltips), so
+          // the header rounds its own corners (all four when collapsed).
+          borderRadius: collapsed ? 5 : '5px 5px 0 0',
         }}
-        title={data.note}
       >
-        {data.label}
-      </div>
-      {data.note && (
-        <div
+        <button
+          type="button"
+          className="nopan"
+          aria-label={collapsed ? 'Expand table' : 'Collapse table'}
+          aria-expanded={!collapsed}
+          onClick={event => {
+            event.stopPropagation();
+            toggle(id);
+          }}
+          style={chevronButtonStyle}
+        >
+          <ChevronIcon collapsed={collapsed} />
+        </button>
+        <span
           style={{
-            height: NOTE_HEIGHT,
-            lineHeight: `${NOTE_HEIGHT}px`,
-            padding: '0 10px',
-            fontStyle: 'italic',
-            color: palette.muted,
-            whiteSpace: 'nowrap',
+            flex: 1,
+            minWidth: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
-          title={data.note}
         >
-          {data.note}
-        </div>
-      )}
-      {data.fields.map(field => (
-        <div
+          {data.label}
+        </span>
+        {data.note && <NoteIcon />}
+      </NodeTooltip>
+      {!collapsed &&
+        data.fields.map(field => (
+        <NodeTooltip
           key={field.name}
+          content={rowTip(field)}
           style={{
             position: 'relative',
             display: 'flex',
             justifyContent: 'space-between',
+            alignItems: 'center',
             gap: 8,
             height: ROW_HEIGHT,
-            lineHeight: `${ROW_HEIGHT}px`,
             padding: '0 10px',
             borderTop: `1px solid ${palette.rowBorder}`,
             whiteSpace: 'nowrap',
           }}
-          title={field.note}
         >
+          {/* Invisible (hidden via the canvas stylesheet) but measured, so
+              edges keep anchoring to the column row. */}
           <Handle
             type="target"
             position={Position.Left}
             id={`${field.name}-target`}
-            style={{
-              width: 7,
-              height: 7,
-              background: palette.handle,
-              border: 'none',
-            }}
             isConnectable={false}
           />
           <span style={{ fontWeight: field.pk ? 700 : 400 }}>
             {field.pk ? `${field.name} [pk]` : field.name}
           </span>
-          <span style={{ color: palette.muted }}>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              color: palette.muted,
+            }}
+          >
             {field.type}
             {field.notNull && !field.pk ? ' *' : ''}
+            {field.enum && (
+              <span
+                aria-label={`enum ${field.enum.name}`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0 3px',
+                  fontSize: 9,
+                  lineHeight: '12px',
+                  fontWeight: 700,
+                  border: `1px solid ${palette.muted}`,
+                  borderRadius: 3,
+                }}
+              >
+                E
+              </span>
+            )}
           </span>
           <Handle
             type="source"
             position={Position.Right}
             id={`${field.name}-source`}
-            style={{
-              width: 7,
-              height: 7,
-              background: palette.handle,
-              border: 'none',
-            }}
             isConnectable={false}
           />
-        </div>
+        </NodeTooltip>
       ))}
     </div>
   );
 };
 
-export const GroupNode = ({ data }: NodeProps<GroupFlowNode>) => {
-  const { palette } = useDbmlTheme();
-  const color = data.color || palette.muted;
+export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
+  const { mode, palette } = useDbmlTheme();
+  const toggle = useContext(CollapseContext);
+  const cycle = GROUP_COLORS[mode];
+  const color = data.color || cycle[data.colorIndex % cycle.length];
+  const collapsed = Boolean(data.collapsed);
   return (
     <div
       style={{
         width: '100%',
         height: '100%',
-        border: `1.5px dashed ${color}`,
         borderRadius: 8,
-        background: `color-mix(in srgb, ${color} 8%, transparent)`,
+        // Opaque tint: mixing over the canvas color instead of transparent
+        // keeps edges and the dot grid from showing through the fill.
+        background: `color-mix(in srgb, ${color} 12%, ${palette.canvasBg})`,
       }}
-      title={data.note}
     >
-      <div
+      <NodeTooltip
+        content={data.note}
         style={{
-          padding: '4px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+          height: GROUP_LABEL_HEIGHT,
+          padding: '0 8px',
           fontFamily: mono,
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 600,
           color,
+          whiteSpace: 'nowrap',
         }}
       >
-        {data.label}
-      </div>
+        <button
+          type="button"
+          className="nopan"
+          aria-label={collapsed ? 'Expand group' : 'Collapse group'}
+          aria-expanded={!collapsed}
+          onClick={event => {
+            event.stopPropagation();
+            toggle(id);
+          }}
+          style={chevronButtonStyle}
+        >
+          <ChevronIcon collapsed={collapsed} />
+        </button>
+        <span
+          style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
+        >
+          {data.label}
+        </span>
+      </NodeTooltip>
+      {/* Anchors for edges re-pointed to a collapsed group; hidden like all
+          handles, centered on the header row. */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="group-target"
+        style={{ top: GROUP_LABEL_HEIGHT / 2 }}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="group-source"
+        style={{ top: GROUP_LABEL_HEIGHT / 2 }}
+        isConnectable={false}
+      />
     </div>
   );
 };

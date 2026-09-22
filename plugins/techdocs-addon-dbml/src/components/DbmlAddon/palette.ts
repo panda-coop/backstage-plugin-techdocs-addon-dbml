@@ -17,7 +17,7 @@ export type DbmlPalette = {
   headerText: string;
   handle: string;
   edge: string;
-  arrow: string;
+  edgeActive: string;
   buttonBorder: string;
   activeBg: string;
   activeText: string;
@@ -49,7 +49,7 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
     headerText: '#ffffff',
     handle: '#78909c',
     edge: '#90a4ae',
-    arrow: '#78909c',
+    edgeActive: '#1976d2',
     buttonBorder: '#b0bec5',
     activeBg: '#37474f',
     activeText: '#ffffff',
@@ -79,7 +79,7 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
     headerText: '#ffffff',
     handle: '#90a4ae',
     edge: '#78909c',
-    arrow: '#90a4ae',
+    edgeActive: '#64b5f6',
     buttonBorder: '#616161',
     activeBg: '#eceff1',
     activeText: '#212121',
@@ -95,6 +95,16 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
       color: '#b0bec5',
     },
   },
+};
+
+/**
+ * Calm cycle for TableGroup accents when the DBML sets no [color: #...],
+ * indexed by group declaration order. Light tones are dark enough for
+ * text on paper; dark tones are lifted for contrast on dark canvases.
+ */
+export const GROUP_COLORS: Record<PaletteMode, string[]> = {
+  light: ['#5c6bc0', '#26a69a', '#8d6e63', '#7e57c2', '#66bb6a', '#78909c'],
+  dark: ['#7986cb', '#4db6ac', '#a1887f', '#9575cd', '#81c784', '#90a4ae'],
 };
 
 /**
@@ -128,7 +138,7 @@ export const useDbmlTheme = (): { mode: PaletteMode; palette: DbmlPalette } => {
       headerText: p.primary?.contrastText ?? base.headerText,
       handle: p.text?.secondary ?? base.handle,
       edge: p.text?.secondary ?? base.edge,
-      arrow: p.text?.secondary ?? base.arrow,
+      edgeActive: mode === 'light' ? p.primary?.main ?? base.edgeActive : base.edgeActive,
       buttonBorder: p.divider ?? base.buttonBorder,
       activeBg: p.primary?.main ?? base.activeBg,
       activeText: p.primary?.contrastText ?? base.activeText,
