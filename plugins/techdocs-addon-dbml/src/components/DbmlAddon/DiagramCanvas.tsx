@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import {
   Background,
   Controls,
@@ -6,6 +6,8 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  type NodeChange,
+  type OnNodeDrag,
 } from '@xyflow/react';
 import type { Database } from '@dbml/core';
 import {
@@ -13,6 +15,7 @@ import {
   type DbmlFlowNode,
   type RelationshipFlowEdge,
 } from './dbmlToFlow';
+import { filterGroupOverlapChanges, growGroupToChildren } from './groupLayout';
 import { GroupNode, TableNode } from './TableNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { XYFLOW_STYLES } from './xyflowStyles';
@@ -62,6 +65,22 @@ export const DiagramCanvas = ({
     setNodes(initial.nodes);
     setEdges(initial.edges);
   }, [initial, setNodes, setEdges]);
+
+  // Groups may not land on top of each other; a table dragged inside its
+  // group grows the group's bounds so it never leaves it.
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<DbmlFlowNode>[]) =>
+      onNodesChange(filterGroupOverlapChanges(changes, nodes)),
+    [onNodesChange, nodes],
+  );
+  const handleNodeDrag = useCallback<OnNodeDrag<DbmlFlowNode>>(
+    (_event, node) => {
+      if (node.parentId) {
+        setNodes(current => growGroupToChildren(current, node.parentId!));
+      }
+    },
+    [setNodes],
+  );
 
   // dbdiagram-style edges: thin grey smoothstep, crow's foot glyphs at the
   // ends, both recoloring together on hover/selection. Handles stay in the
@@ -124,8 +143,9 @@ export const DiagramCanvas = ({
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDrag={handleNodeDrag}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={mode}
