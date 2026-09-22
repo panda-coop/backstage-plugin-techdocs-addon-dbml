@@ -81,8 +81,8 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
     edge: '#78909c',
     edgeActive: '#64b5f6',
     buttonBorder: '#616161',
-    activeBg: '#eceff1',
-    activeText: '#212121',
+    activeBg: '#64b5f6',
+    activeText: '#0d253a',
     errorBorder: '#ef5350',
     code: {
       comment: '#7cb342',
@@ -140,8 +140,14 @@ export const useDbmlTheme = (): { mode: PaletteMode; palette: DbmlPalette } => {
       edge: p.text?.secondary ?? base.edge,
       edgeActive: mode === 'light' ? p.primary?.main ?? base.edgeActive : base.edgeActive,
       buttonBorder: p.divider ?? base.buttonBorder,
-      activeBg: p.primary?.main ?? base.activeBg,
-      activeText: p.primary?.contrastText ?? base.activeText,
+      // Per dbdiagram: the active toggle segment fills with the primary
+      // color in light themes but a fixed light blue in dark themes, where
+      // custom primaries often lack contrast against dark chrome.
+      activeBg: mode === 'light' ? p.primary?.main ?? base.activeBg : base.activeBg,
+      activeText:
+        mode === 'light'
+          ? p.primary?.contrastText ?? base.activeText
+          : base.activeText,
       errorBorder: p.error?.main ?? base.errorBorder,
       code: base.code,
     };

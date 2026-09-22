@@ -132,6 +132,49 @@ describe('Dbml addon', () => {
     ).toBeNull();
   });
 
+  it('shares the diagram/code view between the inline block and the dialog', async () => {
+    const { shadowRoot } = await renderDom(
+      <body>
+        <div className="language-text highlight">
+          <pre>
+            <code>{DBML_FIXTURE}</code>
+          </pre>
+        </div>
+      </body>,
+    );
+
+    const diagram = shadowRoot!.querySelector('[data-testid="dbml-diagram"]')!;
+    fireEvent.click(
+      diagram.querySelector<HTMLButtonElement>(
+        'button[aria-label="Code view"]',
+      )!,
+    );
+
+    // The dialog opens in the view active inline.
+    fireEvent.click(
+      shadowRoot!.querySelector<HTMLButtonElement>(
+        'button[aria-label="Expand diagram"]',
+      )!,
+    );
+    const dialog = document.body.querySelector('[data-testid="dbml-dialog"]')!;
+    expect(
+      dialog.querySelector('[data-testid="dbml-dialog-source"]'),
+    ).not.toBeNull();
+    expect(dialog.querySelector('.react-flow')).toBeNull();
+
+    // Switching in the dialog switches the inline block too.
+    fireEvent.click(
+      dialog.querySelector<HTMLButtonElement>(
+        'button[aria-label="Diagram view"]',
+      )!,
+    );
+    expect(dialog.querySelector('.react-flow')).not.toBeNull();
+    expect(diagram.querySelector('.react-flow')).not.toBeNull();
+    expect(diagram.querySelector('[data-testid="dbml-source"]')).toBeNull();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+  });
+
   it('strips line numbers from highlighttable blocks', async () => {
     const { shadowRoot } = await renderDom(
       <body>

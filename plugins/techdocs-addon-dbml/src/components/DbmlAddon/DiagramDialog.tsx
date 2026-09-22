@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { Database } from '@dbml/core';
 import { DiagramCanvas } from './DiagramCanvas';
+import { highlightDbml } from './highlightDbml';
 import { useDbmlTheme } from './palette';
+import { ViewToggle, type DbmlView } from './ViewToggle';
 
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
@@ -18,14 +20,24 @@ const overlayStyle: React.CSSProperties = {
  * Plain fixed-overlay dialog portaled to document.body — deliberately not a
  * MUI Dialog: the addon mounts inside the TechDocs shadow root where MUI's
  * head-injected styles do not apply, so the overlay is styled inline.
+ *
+ * The diagram/code view is owned by the inline block (DbmlDiagram) and
+ * passed down, so the modal opens in whatever view is active inline and
+ * switching in either place stays in sync.
  */
 export const DiagramDialog = ({
-  title,
+  summary,
   database,
+  source,
+  view,
+  onViewChange,
   onClose,
 }: {
-  title: string;
+  summary: string;
   database: Database;
+  source: string;
+  view: DbmlView;
+  onViewChange: (view: DbmlView) => void;
   onClose: () => void;
 }) => {
   const { palette } = useDbmlTheme();
@@ -64,19 +76,19 @@ export const DiagramDialog = ({
           boxShadow: '0 8px 40px rgba(0, 0, 0, 0.4)',
         }}
         role="dialog"
-        aria-label={title}
+        aria-label={summary}
       >
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            gap: 16,
             padding: '10px 16px',
             borderBottom: `1px solid ${palette.divider}`,
-            fontWeight: 600,
           }}
         >
-          <span>{title}</span>
+          <ViewToggle view={view} onChange={onViewChange} palette={palette} />
           <button
             type="button"
             style={{
@@ -93,8 +105,39 @@ export const DiagramDialog = ({
             Close
           </button>
         </div>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <DiagramCanvas database={database} wheelZoom />
+        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          {view === 'diagram' ? (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <DiagramCanvas database={database} wheelZoom />
+            </div>
+          ) : (
+            <pre
+              style={{
+                flex: 1,
+                minWidth: 0,
+                margin: 0,
+                padding: '0.75em 1em',
+                overflow: 'auto',
+              }}
+              data-testid="dbml-dialog-source"
+            >
+              <code style={{ padding: 0, background: 'transparent' }}>
+                {highlightDbml(source.trim(), palette.code)}
+              </code>
+            </pre>
+          )}
+        </div>
+        {/* Same summary footer as the inline block. */}
+        <div
+          data-testid="dbml-dialog-footer"
+          style={{
+            padding: '4px 10px',
+            borderTop: `1px solid ${palette.divider}`,
+            fontSize: 12,
+            color: palette.muted,
+          }}
+        >
+          {summary}
         </div>
       </div>
     </div>,
