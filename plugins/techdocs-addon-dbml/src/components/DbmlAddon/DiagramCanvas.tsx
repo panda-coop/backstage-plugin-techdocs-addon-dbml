@@ -7,6 +7,7 @@ import {
   useEdgesState,
   useNodesState,
   type NodeChange,
+  type NodeMouseHandler,
   type OnNodeDrag,
 } from '@xyflow/react';
 import type { Database } from '@dbml/core';
@@ -16,7 +17,12 @@ import {
   type DbmlFlowNode,
   type RelationshipFlowEdge,
 } from './dbmlToFlow';
-import { filterGroupOverlapChanges, growGroupToChildren } from './groupLayout';
+import {
+  COLLAPSED_GROUP_WIDTH,
+  filterGroupOverlapChanges,
+  growGroupToChildren,
+  repositionExpandedGroup,
+} from './groupLayout';
 import { GroupCollapseContext, GroupNode, TableNode } from './TableNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { XYFLOW_STYLES } from './xyflowStyles';
@@ -24,9 +30,6 @@ import { useDbmlTheme } from './palette';
 
 const nodeTypes = { dbmlTable: TableNode, dbmlGroup: GroupNode };
 const edgeTypes = { dbmlRelationship: RelationshipEdge };
-
-// A collapsed group shrinks to a compact header-sized block.
-const COLLAPSED_GROUP_WIDTH = 200;
 
 // React Flow sizes its per-edge svgs 0x0 and paints edges as overflow;
 // inside a shadow root Chromium does not paint overflow of zero-sized
@@ -70,12 +73,46 @@ export const DiagramCanvas = ({
     setEdges(initial.edges);
   }, [initial, setNodes, setEdges]);
 
-  // Groups may not land on top of each other; a table dragged inside its
-  // group grows the group's bounds so it never leaves it.
+  // Collapsed groups: children hide, the group shrinks to its header, and
+  // edges into the group re-anchor on the collapsed block. State stays in
+  // `nodes`; both views derive, so expanding restores positions.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const toggleGroup = useCallback(
+    (groupId: string) => {
+      const next = new Set(collapsedGroups);
+      const expanding = next.has(groupId);
+      if (expanding) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      setCollapsedGroups(next);
+      if (expanding) {
+        // A compact block can be parked anywhere; its full bounds may not
+        // fit there — push the expanded group into free space.
+        setNodes(current => repositionExpandedGroup(current, groupId, next));
+      }
+    },
+    [collapsedGroups, setNodes],
+  );
+  const handleNodeClick = useCallback<NodeMouseHandler<DbmlFlowNode>>(
+    (_event, node) => {
+      if (node.type === 'dbmlGroup') {
+        toggleGroup(node.id);
+      }
+    },
+    [toggleGroup],
+  );
+
+  // Groups may not land on top of each other (at their on-screen size, so
+  // a collapsed block moves freely); a table dragged inside its group
+  // grows the group's bounds so it never leaves it.
   const handleNodesChange = useCallback(
     (changes: NodeChange<DbmlFlowNode>[]) =>
-      onNodesChange(filterGroupOverlapChanges(changes, nodes)),
-    [onNodesChange, nodes],
+      onNodesChange(filterGroupOverlapChanges(changes, nodes, collapsedGroups)),
+    [onNodesChange, nodes, collapsedGroups],
   );
   const handleNodeDrag = useCallback<OnNodeDrag<DbmlFlowNode>>(
     (_event, node) => {
@@ -85,24 +122,6 @@ export const DiagramCanvas = ({
     },
     [setNodes],
   );
-
-  // Collapsed groups: children hide, the group shrinks to its header, and
-  // edges into the group re-anchor on the collapsed block. State stays in
-  // `nodes`; both views derive, so expanding restores positions.
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const toggleGroup = useCallback((groupId: string) => {
-    setCollapsedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(groupId)) {
-        next.delete(groupId);
-      } else {
-        next.add(groupId);
-      }
-      return next;
-    });
-  }, []);
 
   const displayNodes = useMemo(() => {
     if (collapsedGroups.size === 0) {
@@ -230,6 +249,7 @@ export const DiagramCanvas = ({
             onNodesChange={handleNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeDrag={handleNodeDrag}
+            onNodeClick={handleNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             colorMode={mode}

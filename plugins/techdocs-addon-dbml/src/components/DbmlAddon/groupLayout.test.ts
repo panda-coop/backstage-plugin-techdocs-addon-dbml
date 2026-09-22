@@ -7,10 +7,12 @@ import {
   type TableFlowNode,
 } from './dbmlToFlow';
 import {
+  GROUP_GAP,
   GROUP_PADDING,
   filterGroupOverlapChanges,
   growGroupToChildren,
   rectsIntersect,
+  repositionExpandedGroup,
 } from './groupLayout';
 
 const group = (
@@ -137,5 +139,51 @@ describe('filterGroupOverlapChanges', () => {
       { type: 'select', id: 'g1', selected: true },
     ];
     expect(filterGroupOverlapChanges(changes, nodes)).toEqual(changes);
+  });
+
+  it('constrains a collapsed group at its compact on-screen size', () => {
+    // At y=-50 the full 100-high group would still reach into g2's rows,
+    // but the collapsed header block (28 high) ends above them.
+    const changes = [move('g1', 150, -50)];
+    expect(
+      filterGroupOverlapChanges(changes, nodes, new Set(['g1'])),
+    ).toEqual(changes);
+    expect(filterGroupOverlapChanges(changes, nodes)).toEqual([]);
+  });
+});
+
+describe('repositionExpandedGroup', () => {
+  it('pushes an expanded group out of an overlap along the shortest axis', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g1', 0, 0, 200, 100),
+      group('g2', 150, 0, 200, 100),
+    ];
+    const result = repositionExpandedGroup(nodes, 'g1', new Set());
+    const g1 = result.find(n => n.id === 'g1')!;
+    // Shortest way out is leftwards: g2.x - width - gap.
+    expect(g1.position).toEqual({ x: 150 - 200 - GROUP_GAP, y: 0 });
+    const g2 = result.find(n => n.id === 'g2')!;
+    expect(g2.position).toEqual({ x: 150, y: 0 });
+  });
+
+  it('treats collapsed neighbors at their compact size', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g1', 0, 0, 200, 100),
+      // Expanded this would overlap; collapsed it only spans the header.
+      group('g2', 100, 60, 300, 300),
+    ];
+    const untouched = repositionExpandedGroup(nodes, 'g2', new Set(['g1']));
+    expect(untouched.find(n => n.id === 'g2')!.position).toEqual({
+      x: 100,
+      y: 60,
+    });
+  });
+
+  it('returns the array unchanged when the group already sits free', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g1', 0, 0, 100, 100),
+      group('g2', 200, 200, 100, 100),
+    ];
+    expect(repositionExpandedGroup(nodes, 'g1', new Set())).toBe(nodes);
   });
 });

@@ -10,6 +10,12 @@ import {
 /** Inner padding between a group border and its child tables. */
 export const GROUP_PADDING = 24;
 
+/** A collapsed group shrinks to a compact header-sized block. */
+export const COLLAPSED_GROUP_WIDTH = 200;
+
+/** Clearance kept between groups when one is pushed out of an overlap. */
+export const GROUP_GAP = 16;
+
 export type Rect = { x: number; y: number; width: number; height: number };
 
 export const rectsIntersect = (a: Rect, b: Rect): boolean =>
@@ -32,6 +38,23 @@ const groupRect = (node: DbmlFlowNode): Rect => ({
   width: node.width ?? 0,
   height: node.height ?? 0,
 });
+
+/**
+ * The rect a group actually occupies on screen: its stored (expanded)
+ * bounds, or the compact header block while collapsed.
+ */
+export const displayGroupRect = (
+  node: DbmlFlowNode,
+  collapsed: boolean,
+): Rect =>
+  collapsed
+    ? {
+        x: node.position.x,
+        y: node.position.y,
+        width: COLLAPSED_GROUP_WIDTH,
+        height: GROUP_LABEL_HEIGHT,
+      }
+    : groupRect(node);
 
 /**
  * Recompute a group's bounds from its children so a dragged table never
@@ -110,6 +133,7 @@ export function growGroupToChildren(
 export function filterGroupOverlapChanges(
   changes: NodeChange<DbmlFlowNode>[],
   nodes: DbmlFlowNode[],
+  collapsedIds: ReadonlySet<string> = new Set(),
 ): NodeChange<DbmlFlowNode>[] {
   return changes.filter(change => {
     if (change.type !== 'position' || !change.position) {
@@ -120,7 +144,7 @@ export function filterGroupOverlapChanges(
       return true;
     }
     const candidate: Rect = {
-      ...groupRect(moving),
+      ...displayGroupRect(moving, collapsedIds.has(moving.id)),
       x: change.position.x,
       y: change.position.y,
     };
@@ -128,7 +152,62 @@ export function filterGroupOverlapChanges(
       other =>
         other.type === 'dbmlGroup' &&
         other.id !== moving.id &&
-        rectsIntersect(candidate, groupRect(other)),
+        rectsIntersect(candidate, displayGroupRect(other, collapsedIds.has(other.id))),
     );
   });
+}
+
+/**
+ * After expanding a collapsed group its full bounds may land on another
+ * group (it could be parked anywhere while compact). Push the expanded
+ * group out along the shortest axis, with a small gap, repeating until
+ * it sits in free space; children follow for free (parent-relative
+ * positions).
+ */
+export function repositionExpandedGroup(
+  nodes: DbmlFlowNode[],
+  groupId: string,
+  collapsedIds: ReadonlySet<string>,
+): DbmlFlowNode[] {
+  const group = nodes.find(n => n.id === groupId && n.type === 'dbmlGroup');
+  if (!group) {
+    return nodes;
+  }
+  const others = nodes
+    .filter(n => n.type === 'dbmlGroup' && n.id !== groupId)
+    .map(n => displayGroupRect(n, collapsedIds.has(n.id)));
+
+  let rect = groupRect(group);
+  let moved = false;
+  for (let guard = 0; guard < 16; guard++) {
+    let hit: Rect | undefined;
+    for (const other of others) {
+      if (rectsIntersect(rect, other)) {
+        hit = other;
+        break;
+      }
+    }
+    if (!hit) {
+      break;
+    }
+    const shifts = [
+      { dx: hit.x + hit.width + GROUP_GAP - rect.x, dy: 0 },
+      { dx: hit.x - rect.width - GROUP_GAP - rect.x, dy: 0 },
+      { dx: 0, dy: hit.y + hit.height + GROUP_GAP - rect.y },
+      { dx: 0, dy: hit.y - rect.height - GROUP_GAP - rect.y },
+    ];
+    const best = shifts.reduce((a, b) =>
+      Math.hypot(a.dx, a.dy) <= Math.hypot(b.dx, b.dy) ? a : b,
+    );
+    rect = { ...rect, x: rect.x + best.dx, y: rect.y + best.dy };
+    moved = true;
+  }
+  if (!moved) {
+    return nodes;
+  }
+  return nodes.map(node =>
+    node.id === groupId
+      ? { ...node, position: { x: rect.x, y: rect.y } }
+      : node,
+  );
 }
