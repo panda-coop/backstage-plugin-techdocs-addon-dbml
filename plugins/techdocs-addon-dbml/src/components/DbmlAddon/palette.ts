@@ -26,7 +26,11 @@ export type DbmlPalette = {
     comment: string;
     string: string;
     keyword: string;
-    number: string;
+    type: string;
+    setting: string;
+    backtick: string;
+    operator: string;
+    color: string;
   };
 };
 
@@ -51,10 +55,14 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
     activeText: '#ffffff',
     errorBorder: '#c62828',
     code: {
-      comment: '#90a4ae',
+      comment: '#689f38',
       string: '#2e7d32',
       keyword: '#1565c0',
-      number: '#d84315',
+      type: '#d84315',
+      setting: '#90a4ae',
+      backtick: '#6a1b9a',
+      operator: '#f9a825',
+      color: '#546e7a',
     },
   },
   dark: {
@@ -77,10 +85,14 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
     activeText: '#212121',
     errorBorder: '#ef5350',
     code: {
-      comment: '#78909c',
+      comment: '#7cb342',
       string: '#81c784',
       keyword: '#64b5f6',
-      number: '#ff8a65',
+      type: '#ff8a65',
+      setting: '#78909c',
+      backtick: '#ce93d8',
+      operator: '#ffd54f',
+      color: '#b0bec5',
     },
   },
 };
