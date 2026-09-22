@@ -1,7 +1,11 @@
 site_name: backstage-plugin-techdocs-addon-dbml
-site_description: Fixture TechDocs site for developing the DBML addon
+site_description: Backstage TechDocs addon rendering interactive DBML diagrams
 nav:
   - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - Authoring: authoring.md
+  - Features: features.md
   - Examples:
       - Overview: example/index.md
       - Simple schema: example/samples/simple.md
