@@ -21,6 +21,7 @@ import {
   COLLAPSED_GROUP_WIDTH,
   filterGroupOverlapChanges,
   growGroupToChildren,
+  pushNeighborsOutOfGroup,
   repositionExpandedGroup,
 } from './groupLayout';
 import { GroupCollapseContext, GroupNode, TableNode } from './TableNode';
@@ -117,10 +118,18 @@ export const DiagramCanvas = ({
   const handleNodeDrag = useCallback<OnNodeDrag<DbmlFlowNode>>(
     (_event, node) => {
       if (node.parentId) {
-        setNodes(current => growGroupToChildren(current, node.parentId!));
+        // Grow the group around the dragged table, then shove whatever
+        // top-level neighbors the grown bounds now overlap.
+        setNodes(current =>
+          pushNeighborsOutOfGroup(
+            growGroupToChildren(current, node.parentId!),
+            node.parentId!,
+            collapsedGroups,
+          ),
+        );
       }
     },
-    [setNodes],
+    [setNodes, collapsedGroups],
   );
 
   const displayNodes = useMemo(() => {

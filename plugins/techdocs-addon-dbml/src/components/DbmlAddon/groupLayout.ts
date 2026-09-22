@@ -124,11 +124,85 @@ export function growGroupToChildren(
   });
 }
 
+/** Minimal shift (plus gap) that moves `rect` out of `obstacle`. */
+const escapeShift = (rect: Rect, obstacle: Rect): { dx: number; dy: number } => {
+  const shifts = [
+    { dx: obstacle.x + obstacle.width + GROUP_GAP - rect.x, dy: 0 },
+    { dx: obstacle.x - rect.width - GROUP_GAP - rect.x, dy: 0 },
+    { dx: 0, dy: obstacle.y + obstacle.height + GROUP_GAP - rect.y },
+    { dx: 0, dy: obstacle.y - rect.height - GROUP_GAP - rect.y },
+  ];
+  return shifts.reduce((a, b) =>
+    Math.hypot(a.dx, a.dy) <= Math.hypot(b.dx, b.dy) ? a : b,
+  );
+};
+
+/**
+ * Collision response for a group whose bounds just changed (a child drag
+ * grew it): every top-level neighbor — other groups at their on-screen
+ * size, ungrouped tables — overlapping it is pushed out along its
+ * shortest escape, and pushes propagate as a wave so displaced nodes
+ * shove whatever they land on in turn. The source group itself never
+ * moves; child tables of other groups follow their parent for free.
+ */
+export function pushNeighborsOutOfGroup(
+  nodes: DbmlFlowNode[],
+  groupId: string,
+  collapsedIds: ReadonlySet<string> = new Set(),
+): DbmlFlowNode[] {
+  const group = nodes.find(n => n.id === groupId && n.type === 'dbmlGroup');
+  if (!group) {
+    return nodes;
+  }
+  const source = displayGroupRect(group, collapsedIds.has(groupId));
+
+  type Item = { id: string; rect: Rect; moved: boolean };
+  const items: Item[] = [];
+  for (const node of nodes) {
+    if (node.id === groupId || node.parentId) {
+      continue;
+    }
+    const rect =
+      node.type === 'dbmlGroup'
+        ? displayGroupRect(node, collapsedIds.has(node.id))
+        : { x: node.position.x, y: node.position.y, ...tableSize(node) };
+    items.push({ id: node.id, rect, moved: false });
+  }
+
+  // Wave: obstacles start with the grown group; every pushed neighbor's
+  // new rect becomes an obstacle for the rest. Bounded for safety.
+  const queue: Rect[] = [source];
+  let anyMoved = false;
+  for (let guard = 0; queue.length > 0 && guard < 32; guard++) {
+    const obstacle = queue.shift()!;
+    for (const item of items) {
+      if (item.rect === obstacle || !rectsIntersect(item.rect, obstacle)) {
+        continue;
+      }
+      const { dx, dy } = escapeShift(item.rect, obstacle);
+      item.rect = { ...item.rect, x: item.rect.x + dx, y: item.rect.y + dy };
+      item.moved = true;
+      anyMoved = true;
+      queue.push(item.rect);
+    }
+  }
+  if (!anyMoved) {
+    return nodes;
+  }
+
+  const movedById = new Map(
+    items.filter(i => i.moved).map(i => [i.id, i.rect]),
+  );
+  return nodes.map(node => {
+    const rect = movedById.get(node.id);
+    return rect ? { ...node, position: { x: rect.x, y: rect.y } } : node;
+  });
+}
+
 /**
  * Wall constraint for group drags: a position change that would land a
  * group on top of another group is dropped, so the group stops at its
- * last valid position instead of overlapping. (Growth driven by a child
- * drag can still overlap a neighbor — dbdiagram accepts the same.)
+ * last valid position instead of overlapping.
  */
 export function filterGroupOverlapChanges(
   changes: NodeChange<DbmlFlowNode>[],
@@ -190,15 +264,7 @@ export function repositionExpandedGroup(
     if (!hit) {
       break;
     }
-    const shifts = [
-      { dx: hit.x + hit.width + GROUP_GAP - rect.x, dy: 0 },
-      { dx: hit.x - rect.width - GROUP_GAP - rect.x, dy: 0 },
-      { dx: 0, dy: hit.y + hit.height + GROUP_GAP - rect.y },
-      { dx: 0, dy: hit.y - rect.height - GROUP_GAP - rect.y },
-    ];
-    const best = shifts.reduce((a, b) =>
-      Math.hypot(a.dx, a.dy) <= Math.hypot(b.dx, b.dy) ? a : b,
-    );
+    const best = escapeShift(rect, hit);
     rect = { ...rect, x: rect.x + best.dx, y: rect.y + best.dy };
     moved = true;
   }

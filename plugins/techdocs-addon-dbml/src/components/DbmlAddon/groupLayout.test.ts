@@ -11,6 +11,7 @@ import {
   GROUP_PADDING,
   filterGroupOverlapChanges,
   growGroupToChildren,
+  pushNeighborsOutOfGroup,
   rectsIntersect,
   repositionExpandedGroup,
 } from './groupLayout';
@@ -149,6 +150,73 @@ describe('filterGroupOverlapChanges', () => {
       filterGroupOverlapChanges(changes, nodes, new Set(['g1'])),
     ).toEqual(changes);
     expect(filterGroupOverlapChanges(changes, nodes)).toEqual([]);
+  });
+});
+
+describe('pushNeighborsOutOfGroup', () => {
+  const tableH = nodeHeight(2);
+
+  it('pushes an overlapping ungrouped table out with a gap', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g', 0, 0, 400, 300),
+      table('inside', 30, 40, 'g'),
+      // Overlaps the group's right half; nearest escape is rightwards.
+      table('free', 350, 100),
+    ];
+    const result = pushNeighborsOutOfGroup(nodes, 'g');
+    const free = result.find(n => n.id === 'free')!;
+    expect(free.position).toEqual({ x: 400 + GROUP_GAP, y: 100 });
+    // Child of the group is untouched (moves with its parent).
+    expect(result.find(n => n.id === 'inside')!.position).toEqual({
+      x: 30,
+      y: 40,
+    });
+  });
+
+  it('pushes an overlapping group as a block', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g', 0, 0, 400, 300),
+      group('other', 380, 50, 200, 100),
+      table('child', 10, 10, 'other'),
+    ];
+    const result = pushNeighborsOutOfGroup(nodes, 'g');
+    const other = result.find(n => n.id === 'other')!;
+    expect(other.position).toEqual({ x: 400 + GROUP_GAP, y: 50 });
+    // The child's parent-relative position is untouched.
+    expect(result.find(n => n.id === 'child')!.position).toEqual({
+      x: 10,
+      y: 10,
+    });
+  });
+
+  it('propagates pushes in a chain', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g', 0, 0, 400, 300),
+      // First table overlaps the group; once pushed right it lands on
+      // the second, which must move too.
+      table('a', 350, 100),
+      table('b', 480, 100),
+    ];
+    const result = pushNeighborsOutOfGroup(nodes, 'g');
+    const a = result.find(n => n.id === 'a')!;
+    const b = result.find(n => n.id === 'b')!;
+    expect(a.position.x).toBe(400 + GROUP_GAP);
+    // b escaped a's new rect (shortest way happens to be downward).
+    expect(b.position).not.toEqual({ x: 480, y: 100 });
+    expect(
+      rectsIntersect(
+        { x: a.position.x, y: a.position.y, width: 240, height: tableH },
+        { x: b.position.x, y: b.position.y, width: 240, height: tableH },
+      ),
+    ).toBe(false);
+  });
+
+  it('returns the array unchanged when nothing overlaps', () => {
+    const nodes: DbmlFlowNode[] = [
+      group('g', 0, 0, 200, 100),
+      table('free', 500, 500),
+    ];
+    expect(pushNeighborsOutOfGroup(nodes, 'g')).toBe(nodes);
   });
 });
 
