@@ -32,6 +32,18 @@ The pages under _Examples_ exercise the addon.
 
 Run the checks with `yarn tsc`, `yarn lint:all`, and `yarn test`.
 
+## Project docs
+
+`docs/` is built two ways from one tree: the dev app's TechDocs builder
+uses the root `mkdocs.yml` (with `techdocs-core`), while the public site
+is built with [Zensical](https://zensical.org) from `zensical.toml`
+(classic theme):
+
+```sh
+uvx zensical serve   # live-reload preview
+uvx zensical build   # static site in site/
+```
+
 ## License
 
 [GPL-3.0-or-later](LICENSE). Copyright (C) 2026 PANDA Coop.
