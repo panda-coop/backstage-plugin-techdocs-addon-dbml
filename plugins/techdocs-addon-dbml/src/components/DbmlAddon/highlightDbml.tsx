@@ -270,15 +270,36 @@ export function highlightDbml(
         parts.push(line.slice(last, t.start));
       }
       const style = styles[t.kind];
-      parts.push(
-        style ? (
+      if (t.kind === 'color') {
+        parts.push(
           <span key={key++} style={style}>
+            <span
+              aria-hidden
+              style={{
+                display: 'inline-block',
+                width: 10,
+                height: 10,
+                background: t.text,
+                borderRadius: 2,
+                border: '1px solid rgba(128, 128, 128, 0.45)',
+                marginRight: 4,
+                verticalAlign: 'middle',
+              }}
+            />
             {t.text}
-          </span>
-        ) : (
-          t.text
-        ),
-      );
+          </span>,
+        );
+      } else {
+        parts.push(
+          style ? (
+            <span key={key++} style={style}>
+              {t.text}
+            </span>
+          ) : (
+            t.text
+          ),
+        );
+      }
       last = t.start + t.text.length;
     }
     if (last < line.length) {

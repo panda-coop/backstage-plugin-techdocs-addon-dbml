@@ -36,12 +36,21 @@ const isPlain = (parts: React.ReactNode[], text: string): boolean =>
         (part.props as any).style === undefined),
   );
 
+const nodeText = (node: React.ReactNode): string => {
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (Array.isArray(node)) {
+    return node.map(nodeText).join('');
+  }
+  if (isValidElement(node)) {
+    return nodeText((node.props as any).children);
+  }
+  return '';
+};
+
 const asText = (parts: React.ReactNode[]): string =>
-  parts
-    .map(part =>
-      typeof part === 'string' ? part : (part as any).props.children,
-    )
-    .join('');
+  parts.map(nodeText).join('');
 
 describe('highlightDbml', () => {
   it('preserves the source text exactly', () => {
@@ -105,8 +114,18 @@ describe('highlightDbml', () => {
     expect(styleOf(parts, 'not')).toEqual({ color: 'c-setting' });
     expect(styleOf(parts, 'null')).toEqual({ color: 'c-setting' });
     expect(styleOf(parts, "'x'")).toEqual({ color: 'c-string' });
-    expect(styleOf(parts, '#3498db')).toBeDefined();
-    expect(styleOf(parts, '#3498db')?.color).toBe('c-color');
+  });
+
+  it('renders a color swatch next to hex color literals', () => {
+    const parts = highlightDbml('TableGroup g [color: #3498db] {\n}', COLORS);
+    const token = parts.find(
+      part => isValidElement(part) && nodeText(part) === '#3498db',
+    ) as React.ReactElement | undefined;
+    expect(token).toBeDefined();
+    expect((token!.props as any).style).toEqual({ color: 'c-color' });
+    const [swatch] = (token!.props as any).children;
+    expect((swatch.props as any).style.background).toBe('#3498db');
+    expect((swatch.props as any).style.width).toBe(10);
   });
 
   it('colors strings green and comments green italic', () => {
