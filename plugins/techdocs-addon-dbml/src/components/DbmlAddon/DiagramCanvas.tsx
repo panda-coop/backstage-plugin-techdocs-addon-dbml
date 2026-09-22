@@ -8,10 +8,12 @@ import {
 import type { Database } from '@dbml/core';
 import { dbmlToFlow } from './dbmlToFlow';
 import { GroupNode, TableNode } from './TableNode';
+import { RelationshipEdge } from './RelationshipEdge';
 import { XYFLOW_STYLES } from './xyflowStyles';
 import { useDbmlTheme } from './palette';
 
 const nodeTypes = { dbmlTable: TableNode, dbmlGroup: GroupNode };
+const edgeTypes = { dbmlRelationship: RelationshipEdge };
 
 // React Flow sizes its per-edge svgs 0x0 and paints edges as overflow;
 // inside a shadow root Chromium does not paint overflow of zero-sized
@@ -44,6 +46,30 @@ export const DiagramCanvas = ({
   const { mode, palette } = useDbmlTheme();
   const { nodes, edges } = useMemo(() => dbmlToFlow(database), [database]);
 
+  // dbdiagram-style edges: thin grey smoothstep, crow's foot glyphs at the
+  // ends, both recoloring together on hover/selection. Handles stay in the
+  // DOM as edge anchors but are never shown. Placed after the vendored
+  // sheet so the hover/selected rules override its .selected styling.
+  const edgeCss = `
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+.react-flow__edge .react-flow__edge-path,
+.react-flow__edge .dbml-edge-end {
+  stroke: ${palette.edge};
+  stroke-width: 1.25;
+  fill: none;
+}
+.react-flow__edge:hover .react-flow__edge-path,
+.react-flow__edge:hover .dbml-edge-end,
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge.selected .dbml-edge-end {
+  stroke: ${palette.edgeActive};
+  stroke-width: 1.75;
+}
+`;
+
   // The zoom/fit controls follow the widget chrome (paper surface) instead
   // of React Flow's own colorMode styling.
   const themedControlsCss = `
@@ -74,6 +100,7 @@ export const DiagramCanvas = ({
       <style>
         {XYFLOW_STYLES}
         {SHADOW_DOM_FIXES}
+        {edgeCss}
         {themedControlsCss}
       </style>
       <ReactFlowProvider>
@@ -81,6 +108,7 @@ export const DiagramCanvas = ({
           defaultNodes={nodes}
           defaultEdges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           colorMode={mode}
           fitView
           minZoom={0.1}

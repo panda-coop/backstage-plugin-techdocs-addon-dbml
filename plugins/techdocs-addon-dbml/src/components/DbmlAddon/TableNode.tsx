@@ -59,16 +59,12 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
           }}
           title={field.note}
         >
+          {/* Invisible (hidden via the canvas stylesheet) but measured, so
+              edges keep anchoring to the column row. */}
           <Handle
             type="target"
             position={Position.Left}
             id={`${field.name}-target`}
-            style={{
-              width: 7,
-              height: 7,
-              background: palette.handle,
-              border: 'none',
-            }}
             isConnectable={false}
           />
           <span style={{ fontWeight: field.pk ? 700 : 400 }}>
@@ -82,12 +78,6 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
             type="source"
             position={Position.Right}
             id={`${field.name}-source`}
-            style={{
-              width: 7,
-              height: 7,
-              background: palette.handle,
-              border: 'none',
-            }}
             isConnectable={false}
           />
         </div>
