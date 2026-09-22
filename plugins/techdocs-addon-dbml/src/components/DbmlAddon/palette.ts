@@ -26,7 +26,6 @@ export type DbmlPalette = {
     comment: string;
     string: string;
     keyword: string;
-    number: string;
     type: string;
     setting: string;
     backtick: string;
@@ -59,7 +58,6 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
       comment: '#689f38',
       string: '#2e7d32',
       keyword: '#1565c0',
-      number: '#d84315',
       type: '#d84315',
       setting: '#90a4ae',
       backtick: '#6a1b9a',
@@ -90,7 +88,6 @@ export const PALETTES: Record<PaletteMode, DbmlPalette> = {
       comment: '#7cb342',
       string: '#81c784',
       keyword: '#64b5f6',
-      number: '#ff8a65',
       type: '#ff8a65',
       setting: '#78909c',
       backtick: '#ce93d8',
