@@ -23,6 +23,7 @@ export const GroupCollapseContext = createContext<(groupId: string) => void>(
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 
+// A note sheet: rounded page with two text lines.
 const NoteIcon = () => (
   <svg
     width={12}
@@ -35,9 +36,9 @@ const NoteIcon = () => (
     aria-hidden
     style={{ flexShrink: 0, opacity: 0.85 }}
   >
-    <circle cx="12" cy="12" r="9" />
-    <line x1="12" y1="11" x2="12" y2="17" />
-    <line x1="12" y1="7" x2="12" y2="7.5" />
+    <rect x="5" y="4" width="14" height="16" rx="2" />
+    <line x1="9" y1="9" x2="15" y2="9" />
+    <line x1="9" y1="13" x2="15" y2="13" />
   </svg>
 );
 
@@ -52,6 +53,27 @@ const enumTip = (fieldEnum: FieldEnum) => (
     ))}
   </span>
 );
+
+// Hovering the row surfaces everything about the column: its note, its
+// enum values, or both.
+const rowTip = (field: {
+  note?: string;
+  enum?: FieldEnum;
+}): React.ReactNode | undefined => {
+  if (!field.note && !field.enum) {
+    return undefined;
+  }
+  return (
+    <span>
+      {field.note && <span style={{ display: 'block' }}>{field.note}</span>}
+      {field.enum && (
+        <span style={{ display: 'block', marginTop: field.note ? 4 : 0 }}>
+          {enumTip(field.enum)}
+        </span>
+      )}
+    </span>
+  );
+};
 
 export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
   const { palette } = useDbmlTheme();
@@ -87,6 +109,8 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
       >
         <span
           style={{
+            flex: 1,
+            minWidth: 0,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
@@ -99,7 +123,7 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
       {data.fields.map(field => (
         <NodeTooltip
           key={field.name}
-          content={field.note}
+          content={rowTip(field)}
           style={{
             position: 'relative',
             display: 'flex',
@@ -134,25 +158,20 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
             {field.type}
             {field.notNull && !field.pk ? ' *' : ''}
             {field.enum && (
-              <NodeTooltip
-                content={enumTip(field.enum)}
-                style={{ display: 'inline-flex' }}
+              <span
+                aria-label={`enum ${field.enum.name}`}
+                style={{
+                  display: 'inline-block',
+                  padding: '0 3px',
+                  fontSize: 9,
+                  lineHeight: '12px',
+                  fontWeight: 700,
+                  border: `1px solid ${palette.muted}`,
+                  borderRadius: 3,
+                }}
               >
-                <span
-                  aria-label={`enum ${field.enum.name}`}
-                  style={{
-                    display: 'inline-block',
-                    padding: '0 3px',
-                    fontSize: 9,
-                    lineHeight: '12px',
-                    fontWeight: 700,
-                    border: `1px solid ${palette.muted}`,
-                    borderRadius: 3,
-                  }}
-                >
-                  E
-                </span>
-              </NodeTooltip>
+                E
+              </span>
             )}
           </span>
           <Handle
