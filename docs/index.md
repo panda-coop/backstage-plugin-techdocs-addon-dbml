@@ -20,5 +20,7 @@ Where to go next:
 - [Usage](usage.md) — wire the addon into the new or classic frontend system.
 - [Authoring](authoring.md) — how DBML blocks in TechDocs pages are detected.
 - [Features](features.md) — what the rendered diagram can do.
+- [Reference](reference.md) — package exports, claimed markup, DBML
+  support matrix, theming.
 - [Examples](example/index.md) — live sample pages (these also serve as the
   development fixture for this repo).
