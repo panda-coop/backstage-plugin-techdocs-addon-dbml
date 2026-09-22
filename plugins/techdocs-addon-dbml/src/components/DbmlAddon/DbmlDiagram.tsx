@@ -5,6 +5,7 @@ import { DiagramCanvas } from './DiagramCanvas';
 import { DiagramDialog } from './DiagramDialog';
 import { highlightDbml } from './highlightDbml';
 import { useDbmlTheme, type DbmlPalette } from './palette';
+import { ViewToggle, type DbmlView } from './ViewToggle';
 
 type ParseResult = { database: Database } | { error: string };
 
@@ -21,40 +22,6 @@ function parseDbml(source: string): ParseResult {
     };
   }
 }
-
-const DiagramIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    aria-hidden="true"
-  >
-    <rect x="2" y="3" width="9" height="7" rx="1" />
-    <rect x="13" y="14" width="9" height="7" rx="1" />
-    <path d="M6.5 10v4a3 3 0 0 0 3 3H13" />
-  </svg>
-);
-
-const CodeIcon = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="m9 18-6-6 6-6" />
-    <path d="m15 6 6 6-6 6" />
-  </svg>
-);
 
 const ExpandIcon = () => (
   <svg
@@ -92,7 +59,7 @@ const iconButtonStyle = (palette: DbmlPalette): React.CSSProperties => ({
 export const DbmlDiagram = ({ source }: { source: string }) => {
   const result = useMemo(() => parseDbml(source), [source]);
   const [expanded, setExpanded] = useState(false);
-  const [view, setView] = useState<'diagram' | 'code'>('diagram');
+  const [view, setView] = useState<DbmlView>('diagram');
   const { palette } = useDbmlTheme();
 
   // Explicit background and text colors: the frame lives in the TechDocs
@@ -122,44 +89,6 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
     );
   }
 
-  // Segmented control: borderless icon buttons with a filled pill that
-  // slides to the active one.
-  const SEGMENT_WIDTH = 30;
-  const SEGMENT_HEIGHT = 24;
-  const SEGMENT_GAP = 4;
-
-  const viewButton = (
-    target: 'diagram' | 'code',
-    label: string,
-    icon: React.ReactNode,
-  ) => (
-    <button
-      type="button"
-      style={{
-        position: 'relative',
-        width: SEGMENT_WIDTH,
-        height: SEGMENT_HEIGHT,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: 'none',
-        borderRadius: 4,
-        background: 'transparent',
-        padding: 0,
-        cursor: 'pointer',
-        font: 'inherit',
-        color: view === target ? palette.activeText : 'inherit',
-        transition: 'color 150ms ease',
-      }}
-      aria-pressed={view === target}
-      aria-label={label}
-      title={label}
-      onClick={() => setView(target)}
-    >
-      {icon}
-    </button>
-  );
-
   return (
     <div style={frameStyle} data-testid="dbml-diagram">
       <div
@@ -172,38 +101,7 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
           fontSize: 13,
         }}
       >
-        <span
-          role="group"
-          aria-label="View"
-          style={{
-            position: 'relative',
-            display: 'inline-flex',
-            gap: SEGMENT_GAP,
-            padding: 3,
-            border: `1px solid ${palette.divider}`,
-            borderRadius: 6,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: 3,
-              left: 3,
-              width: SEGMENT_WIDTH,
-              height: SEGMENT_HEIGHT,
-              borderRadius: 4,
-              background: palette.activeBg,
-              transform:
-                view === 'diagram'
-                  ? 'translateX(0)'
-                  : `translateX(${SEGMENT_WIDTH + SEGMENT_GAP}px)`,
-              transition: 'transform 150ms ease',
-            }}
-          />
-          {viewButton('diagram', 'Diagram view', <DiagramIcon />)}
-          {viewButton('code', 'Code view', <CodeIcon />)}
-        </span>
+        <ViewToggle view={view} onChange={setView} palette={palette} />
         <button
           type="button"
           style={{ ...iconButtonStyle(palette), borderRadius: 4 }}
