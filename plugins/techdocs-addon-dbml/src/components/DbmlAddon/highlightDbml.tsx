@@ -132,6 +132,13 @@ const isWord = (t: Token): boolean => /^[A-Za-z_]/.test(t.text);
  * place, and block-stack bookkeeping for the following lines.
  */
 function classifyLine(tokens: Token[], state: ScanState): void {
+  // A pending block (a header line without `{`) only survives up to an
+  // immediately following `{` line; anything else consumes it. Otherwise
+  // a single-line `Note: '...'` statement would leak its block type into
+  // the next `Table ... {` and break type detection there.
+  if (tokens.length > 0 && tokens[0].text !== '{') {
+    state.pendingBlock = undefined;
+  }
   const top = state.stack[state.stack.length - 1];
   const firstWordIdx = tokens.findIndex(
     t => t.kind === 'plain' && isWord(t),

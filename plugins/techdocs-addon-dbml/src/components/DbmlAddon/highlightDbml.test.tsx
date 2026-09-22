@@ -158,6 +158,25 @@ describe('highlightDbml', () => {
     expect(styleOf(parts, '<>')).toEqual({ color: 'c-operator' });
   });
 
+  it('keeps type highlighting in a table following a single-line Note', () => {
+    const parts = highlightDbml(
+      [
+        'Table customers {',
+        '  id integer',
+        "  Note: 'People and companies buying from us'",
+        '}',
+        '',
+        'Table addresses {',
+        '  line1 varchar [not null]',
+        '  country_code char(2) [not null]',
+        '}',
+      ].join('\n'),
+      COLORS,
+    );
+    expect(styleOf(parts, 'varchar')).toEqual({ color: 'c-type' });
+    expect(styleOf(parts, 'char')).toEqual({ color: 'c-type' });
+  });
+
   it('handles multi-line triple-quoted notes as strings', () => {
     const source = "Table t {\n  Note: '''\n    multi line\n  '''\n}";
     const parts = highlightDbml(source, COLORS);
