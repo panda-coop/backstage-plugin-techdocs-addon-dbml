@@ -3,7 +3,7 @@
 # techdocs-core mkdocs plugin, hence two configs over one tree.
 [project]
 site_url = "https://panda-coop.github.io/backstage-plugin-techdocs-addon-dbml/"
-site_name = "backstage-plugin-techdocs-addon-dbml"
+site_name = "DBML for TechDocs"
 site_description = "Backstage TechDocs addon rendering interactive DBML diagrams"
 repo_url = "https://github.com/panda-coop/backstage-plugin-techdocs-addon-dbml"
 repo_name = "panda-coop/backstage-plugin-techdocs-addon-dbml"
