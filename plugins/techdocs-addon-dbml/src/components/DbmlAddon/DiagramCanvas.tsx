@@ -12,19 +12,18 @@ import {
 } from '@xyflow/react';
 import type { Database } from '@dbml/core';
 import {
-  GROUP_LABEL_HEIGHT,
   dbmlToFlow,
   type DbmlFlowNode,
   type RelationshipFlowEdge,
 } from './dbmlToFlow';
 import {
-  COLLAPSED_GROUP_WIDTH,
   filterGroupOverlapChanges,
   growGroupToChildren,
   pushNeighborsOutOfGroup,
   repositionExpandedGroup,
 } from './groupLayout';
-import { GroupCollapseContext, GroupNode, TableNode } from './TableNode';
+import { deriveDisplayEdges, deriveDisplayNodes } from './collapseDerivation';
+import { CollapseContext, GroupNode, TableNode } from './TableNode';
 import { RelationshipEdge } from './RelationshipEdge';
 import { XYFLOW_STYLES } from './xyflowStyles';
 import { useDbmlTheme } from './palette';
@@ -74,10 +73,13 @@ export const DiagramCanvas = ({
     setEdges(initial.edges);
   }, [initial, setNodes, setEdges]);
 
-  // Collapsed groups: children hide, the group shrinks to its header, and
-  // edges into the group re-anchor on the collapsed block. State stays in
-  // `nodes`; both views derive, so expanding restores positions.
+  // Collapse is display state derived from these sets (see
+  // collapseDerivation.ts); the canonical nodes/edges keep full geometry
+  // so expanding restores everything.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [collapsedTables, setCollapsedTables] = useState<Set<string>>(
     () => new Set(),
   );
   const toggleGroup = useCallback(
@@ -97,6 +99,30 @@ export const DiagramCanvas = ({
       }
     },
     [collapsedGroups, setNodes],
+  );
+  // One toggle for both node kinds: the chevrons in GroupNode and
+  // TableNode hand back their node id and the canvas dispatches on type.
+  const toggleCollapse = useCallback(
+    (nodeId: string) => {
+      const node = nodes.find(n => n.id === nodeId);
+      if (!node) {
+        return;
+      }
+      if (node.type === 'dbmlGroup') {
+        toggleGroup(nodeId);
+        return;
+      }
+      setCollapsedTables(prev => {
+        const next = new Set(prev);
+        if (next.has(nodeId)) {
+          next.delete(nodeId);
+        } else {
+          next.add(nodeId);
+        }
+        return next;
+      });
+    },
+    [nodes, toggleGroup],
   );
   const handleNodeClick = useCallback<NodeMouseHandler<DbmlFlowNode>>(
     (_event, node) => {
@@ -132,66 +158,14 @@ export const DiagramCanvas = ({
     [setNodes, collapsedGroups],
   );
 
-  const displayNodes = useMemo(() => {
-    if (collapsedGroups.size === 0) {
-      return nodes;
-    }
-    return nodes.map(node => {
-      if (node.type === 'dbmlGroup' && collapsedGroups.has(node.id)) {
-        return {
-          ...node,
-          width: COLLAPSED_GROUP_WIDTH,
-          height: GROUP_LABEL_HEIGHT,
-          data: { ...node.data, collapsed: true },
-        };
-      }
-      if (node.parentId && collapsedGroups.has(node.parentId)) {
-        return { ...node, hidden: true };
-      }
-      return node;
-    });
-  }, [nodes, collapsedGroups]);
-
-  const displayEdges = useMemo(() => {
-    if (collapsedGroups.size === 0) {
-      return edges;
-    }
-    const parentOf = new Map<string, string>();
-    for (const node of nodes) {
-      if (node.parentId) {
-        parentOf.set(node.id, node.parentId);
-      }
-    }
-    const seen = new Set<string>();
-    const result: typeof edges = [];
-    for (const edge of edges) {
-      let { source, target, sourceHandle, targetHandle } = edge;
-      const sourceGroup = parentOf.get(source);
-      const targetGroup = parentOf.get(target);
-      if (sourceGroup && collapsedGroups.has(sourceGroup)) {
-        source = sourceGroup;
-        sourceHandle = 'group-source';
-      }
-      if (targetGroup && collapsedGroups.has(targetGroup)) {
-        target = targetGroup;
-        targetHandle = 'group-target';
-      }
-      if (source === target) {
-        continue; // both endpoints inside the same collapsed group
-      }
-      const key = `${source}|${sourceHandle}|${target}|${targetHandle}`;
-      if (seen.has(key)) {
-        continue; // parallel edges collapse into one
-      }
-      seen.add(key);
-      result.push(
-        source === edge.source && target === edge.target
-          ? edge
-          : { ...edge, source, sourceHandle, target, targetHandle },
-      );
-    }
-    return result;
-  }, [edges, nodes, collapsedGroups]);
+  const displayNodes = useMemo(
+    () => deriveDisplayNodes(nodes, collapsedGroups, collapsedTables),
+    [nodes, collapsedGroups, collapsedTables],
+  );
+  const displayEdges = useMemo(
+    () => deriveDisplayEdges(edges, nodes, collapsedGroups, collapsedTables),
+    [edges, nodes, collapsedGroups, collapsedTables],
+  );
 
   // dbdiagram-style edges: thin grey smoothstep, crow's foot glyphs at the
   // ends, both recoloring together on hover/selection. Handles stay in the
@@ -251,7 +225,7 @@ export const DiagramCanvas = ({
         {themedControlsCss}
       </style>
       <ReactFlowProvider>
-        <GroupCollapseContext.Provider value={toggleGroup}>
+        <CollapseContext.Provider value={toggleCollapse}>
           <ReactFlow
             nodes={displayNodes}
             edges={displayEdges}
@@ -279,7 +253,7 @@ export const DiagramCanvas = ({
             />
             <Controls showInteractive={false} />
           </ReactFlow>
-        </GroupCollapseContext.Provider>
+        </CollapseContext.Provider>
       </ReactFlowProvider>
     </div>
   );

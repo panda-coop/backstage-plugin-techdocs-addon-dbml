@@ -13,12 +13,44 @@ import { NodeTooltip } from './NodeTooltip';
 import type { FieldEnum } from './dbmlToFlow';
 
 /**
- * Collapse toggling lives in DiagramCanvas (it owns the collapsed set and
- * the derived nodes/edges); a context keeps the callback out of node
- * data, so node objects stay serializable and memo-friendly.
+ * Collapse toggling lives in DiagramCanvas (it owns the collapsed sets
+ * and the derived nodes/edges); a context keeps the callback out of node
+ * data, so node objects stay serializable and memo-friendly. Both
+ * GroupNode and TableNode hand back their node id; the canvas dispatches
+ * on node type.
  */
-export const GroupCollapseContext = createContext<(groupId: string) => void>(
+export const CollapseContext = createContext<(nodeId: string) => void>(
   () => {},
+);
+
+const chevronButtonStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  padding: 0,
+  border: 'none',
+  background: 'transparent',
+  color: 'inherit',
+  cursor: 'pointer',
+};
+
+const ChevronIcon = ({ collapsed }: { collapsed: boolean }) => (
+  <svg
+    width={12}
+    height={12}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2.5}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+    style={{
+      transform: collapsed ? 'rotate(-90deg)' : 'none',
+      transition: 'transform 150ms ease',
+    }}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
 );
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
@@ -75,8 +107,10 @@ const rowTip = (field: {
   );
 };
 
-export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
+export const TableNode = ({ id, data }: NodeProps<TableFlowNode>) => {
   const { palette } = useDbmlTheme();
+  const toggle = useContext(CollapseContext);
+  const collapsed = Boolean(data.collapsed);
 
   return (
     <div
@@ -91,6 +125,22 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
         boxShadow: '0 1px 4px rgba(0, 0, 0, 0.15)',
       }}
     >
+      {/* Anchors for edges re-pointed to a collapsed table; hidden like
+          all handles, centered on the header row. */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="table-target"
+        style={{ top: HEADER_HEIGHT / 2 }}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="table-source"
+        style={{ top: HEADER_HEIGHT / 2 }}
+        isConnectable={false}
+      />
       <NodeTooltip
         content={data.note}
         style={{
@@ -103,10 +153,23 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
           color: palette.headerText,
           fontWeight: 600,
           // The root no longer clips (overflow would cut off tooltips), so
-          // the header rounds its own top corners.
-          borderRadius: '5px 5px 0 0',
+          // the header rounds its own corners (all four when collapsed).
+          borderRadius: collapsed ? 5 : '5px 5px 0 0',
         }}
       >
+        <button
+          type="button"
+          className="nopan"
+          aria-label={collapsed ? 'Expand table' : 'Collapse table'}
+          aria-expanded={!collapsed}
+          onClick={event => {
+            event.stopPropagation();
+            toggle(id);
+          }}
+          style={chevronButtonStyle}
+        >
+          <ChevronIcon collapsed={collapsed} />
+        </button>
         <span
           style={{
             flex: 1,
@@ -120,7 +183,8 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
         </span>
         {data.note && <NoteIcon />}
       </NodeTooltip>
-      {data.fields.map(field => (
+      {!collapsed &&
+        data.fields.map(field => (
         <NodeTooltip
           key={field.name}
           content={rowTip(field)}
@@ -186,29 +250,9 @@ export const TableNode = ({ data }: NodeProps<TableFlowNode>) => {
   );
 };
 
-const ChevronIcon = ({ collapsed }: { collapsed: boolean }) => (
-  <svg
-    width={12}
-    height={12}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2.5}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-    style={{
-      transform: collapsed ? 'rotate(-90deg)' : 'none',
-      transition: 'transform 150ms ease',
-    }}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
 export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
   const { mode } = useDbmlTheme();
-  const toggle = useContext(GroupCollapseContext);
+  const toggle = useContext(CollapseContext);
   const cycle = GROUP_COLORS[mode];
   const color = data.color || cycle[data.colorIndex % cycle.length];
   const collapsed = Boolean(data.collapsed);
@@ -246,15 +290,7 @@ export const GroupNode = ({ id, data }: NodeProps<GroupFlowNode>) => {
             event.stopPropagation();
             toggle(id);
           }}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: 0,
-            border: 'none',
-            background: 'transparent',
-            color: 'inherit',
-            cursor: 'pointer',
-          }}
+          style={chevronButtonStyle}
         >
           <ChevronIcon collapsed={collapsed} />
         </button>
