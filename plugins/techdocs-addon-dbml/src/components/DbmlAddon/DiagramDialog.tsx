@@ -128,7 +128,9 @@ export const DiagramDialog = ({
               }}
               data-testid="dbml-dialog-source"
             >
-              <code>{highlightDbml(source.trim(), palette.code)}</code>
+              <code style={{ padding: 0, background: 'transparent' }}>
+                {highlightDbml(source.trim(), palette.code)}
+              </code>
             </pre>
           )}
         </div>

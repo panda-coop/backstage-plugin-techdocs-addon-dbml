@@ -126,7 +126,11 @@ export const DbmlDiagram = ({ source }: { source: string }) => {
           }}
           data-testid="dbml-source"
         >
-          <code>{highlightDbml(source.trim(), palette.code)}</code>
+          {/* Neutralize the TechDocs (mkdocs) shadow-root styles that give
+              inline <code> its own padding and background. */}
+          <code style={{ padding: 0, background: 'transparent' }}>
+            {highlightDbml(source.trim(), palette.code)}
+          </code>
         </pre>
       )}
       <div
