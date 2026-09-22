@@ -1,25 +1,27 @@
-# backstage-plugin-techdocs-addon-dbml
+# DBML for TechDocs
 
-Backstage TechDocs addon rendering interactive DBML diagrams.
+`backstage-plugin-techdocs-addon-dbml`
 
-This repository is a Backstage workspace: the published npm package lives in
-[`plugins/techdocs-addon-dbml`](plugins/techdocs-addon-dbml) (see its README
-for usage), while `packages/app` and `packages/backend` form a dev-only
-Backstage instance used as a playground. The `docs/` directory is the
-project documentation; `docs/example/` holds the DBML sample pages that
-double as the addon's development fixture. The whole site is registered in
-the dev catalog through the root `catalog-info.yaml`.
+[![npm](https://img.shields.io/npm/v/backstage-plugin-techdocs-addon-dbml)](https://www.npmjs.com/package/backstage-plugin-techdocs-addon-dbml)
+[![license](https://img.shields.io/github/license/panda-coop/backstage-plugin-techdocs-addon-dbml)](LICENSE)
+[![docs](https://img.shields.io/github/actions/workflow/status/panda-coop/backstage-plugin-techdocs-addon-dbml/docs.yml?label=docs)](https://panda-coop.github.io/backstage-plugin-techdocs-addon-dbml/)
+
+Backstage TechDocs addon that turns `dbml` code fences into interactive
+entity-relationship diagrams — draggable tables, crow's foot edges,
+collapsible table groups, tooltips, and a synced code view.
+
+**Documentation: <https://panda-coop.github.io/backstage-plugin-techdocs-addon-dbml/>**
+
+The published npm package lives in
+[`plugins/techdocs-addon-dbml`](plugins/techdocs-addon-dbml);
+`packages/app` and `packages/backend` form a dev-only Backstage instance,
+and `docs/` is the documentation source (with the addon's development
+fixture under `docs/example/`).
 
 ## Development
 
 Prerequisites: Node 22 or 24, yarn via corepack, and mkdocs for the local
-TechDocs builder:
-
-```sh
-uv tool install mkdocs --with mkdocs-techdocs-core
-```
-
-Then:
+TechDocs builder (`uv tool install mkdocs --with mkdocs-techdocs-core`).
 
 ```sh
 yarn install
@@ -27,25 +29,11 @@ yarn start
 ```
 
 Open <http://localhost:3003>, navigate to the
-`backstage-plugin-techdocs-addon-dbml` component, and open its **Docs** tab.
-The pages under _Examples_ exercise the addon.
-
-Run the checks with `yarn tsc`, `yarn lint:all`, and `yarn test`.
-
-## Project docs
-
-`docs/` is built two ways from one tree: the dev app's TechDocs builder
-uses the root `mkdocs.yml` (with `techdocs-core`), while the public site
-at
-<https://panda-coop.github.io/backstage-plugin-techdocs-addon-dbml/>
-is built with [Zensical](https://zensical.org) from `zensical.toml`
-(classic theme) and deployed by the `docs` workflow on pushes to `main`
-that touch `docs/` or `zensical.toml`:
-
-```sh
-uvx zensical serve   # live-reload preview
-uvx zensical build   # static site in site/
-```
+`backstage-plugin-techdocs-addon-dbml` component, and open its **Docs**
+tab — the _Examples_ pages exercise the addon. Checks: `yarn tsc`,
+`yarn lint:all`, `yarn test`. The public docs are built with
+[Zensical](https://zensical.org) (`uvx zensical serve`) and deployed by
+the `docs` workflow.
 
 ## License
 

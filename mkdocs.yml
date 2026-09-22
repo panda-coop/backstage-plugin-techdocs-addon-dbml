@@ -1,4 +1,4 @@
-site_name: backstage-plugin-techdocs-addon-dbml
+site_name: DBML for TechDocs
 site_description: Backstage TechDocs addon rendering interactive DBML diagrams
 nav:
   - Home: index.md

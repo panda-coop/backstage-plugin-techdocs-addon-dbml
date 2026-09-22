@@ -1,8 +1,9 @@
-# backstage-plugin-techdocs-addon-dbml
+# DBML for TechDocs
 
-A Backstage TechDocs addon that replaces `dbml` code fences in TechDocs
-pages with interactive entity-relationship diagrams. Parsing is done
-with [`@dbml/core`](https://www.dbml.org/), rendering with React Flow.
+A Backstage TechDocs addon (`backstage-plugin-techdocs-addon-dbml`) that
+replaces `dbml` code fences in TechDocs pages with interactive
+entity-relationship diagrams. Parsing is done with
+[`@dbml/core`](https://www.dbml.org/), rendering with React Flow.
 
 | Capability | Notes |
 |---|---|
